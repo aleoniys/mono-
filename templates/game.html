@@ -44,16 +44,18 @@
         .cell.cell-side-left { flex-direction: row; }
         .cell.cell-side-left .color-bar { width: 26%; min-width: 22%; height: 100%; }
         .cell.cell-side-left .color-bar > * { writing-mode: vertical-rl; text-orientation: mixed; white-space: nowrap; }
+        .cell.cell-side-left .color-bar .color-bar-stars { display: block; writing-mode: vertical-rl; line-height: 1.1; }
         .cell.cell-side-left .cell-content { flex: 1; min-width: 0; }
         .cell.cell-side-right { flex-direction: row; }
         .cell.cell-side-right .color-bar { width: 26%; min-width: 22%; height: 100%; order: 2; }
         .cell.cell-side-right .color-bar > * { writing-mode: vertical-rl; text-orientation: mixed; white-space: nowrap; }
+        .cell.cell-side-right .color-bar .color-bar-stars { display: block; writing-mode: vertical-rl; line-height: 1.1; }
         .cell.cell-side-right .cell-content { flex: 1; min-width: 0; order: 1; }
         .cell-content { padding: 4px 6px; word-wrap: break-word; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; align-items: center; width: 100%; font-size: clamp(8px, 1.6vmin, 15px); color: #374151; }
         .cell-content .cell-icon { font-size: clamp(11px, 1.8vmin, 18px); margin-right: 1px; }
         .cell-vertical-text .cell-content > div:first-child { writing-mode: vertical-rl; text-orientation: mixed; white-space: nowrap; line-height: 1.3; min-height: 1.5em; }
-        .tokens-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; padding-bottom: 2px; width: 100%; }
-        .token { width: clamp(10px, 2.2vmin, 22px); height: clamp(10px, 2.2vmin, 22px); border-radius: 50%; border: 1px solid #fff; box-shadow: 0 0 3px #000; z-index: 10; }
+        .tokens-container { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 2px; width: auto; max-width: 100%; pointer-events: none; z-index: 15; }
+        .token { width: clamp(10px, 2.2vmin, 22px); height: clamp(10px, 2.2vmin, 22px); border-radius: 50%; border: 1px solid #fff; box-shadow: 0 0 3px #000; z-index: 10; flex-shrink: 0; }
         @keyframes hop { 0% { transform: translateY(0); } 50% { transform: translateY(-50%) scale(1.1); } 100% { transform: translateY(0); } }
         .hopping { animation: hop 0.25s linear; }
 
@@ -148,14 +150,14 @@
         .dice3d-scene { display: flex; gap: clamp(40px, 10vw, 80px); align-items: center; justify-content: center; margin-bottom: clamp(20px, 4vw, 40px); }
         .dice3d-cube { --half: clamp(25px, 6vmin, 40px); width: clamp(50px, 12vmin, 80px); height: clamp(50px, 12vmin, 80px); position: relative; transform-style: preserve-3d; transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform: translateZ(0); }
         .dice3d-face { position: absolute; width: 100%; height: 100%; background: #fff; backface-visibility: hidden; transform-style: preserve-3d; box-shadow: inset 0 0 6px rgba(0,0,0,0.2); border: 1px solid #e5e7eb; border-radius: 0; }
-        .dice3d-face .dot { width: 15%; height: 15%; min-width: 6px; min-height: 6px; background: #1a1a1a; border-radius: 50%; position: absolute; }
-        .dice3d-face .c { top: 42.5%; left: 42.5%; transform: translate(-50%, -50%); }
-        .dice3d-face .tl { top: 15%; left: 15%; }
-        .dice3d-face .tr { top: 15%; right: 15%; }
-        .dice3d-face .bl { bottom: 15%; left: 15%; }
-        .dice3d-face .br { bottom: 15%; right: 15%; }
-        .dice3d-face .ml { top: 42.5%; left: 15%; transform: translateY(-50%); }
-        .dice3d-face .mr { top: 42.5%; right: 15%; transform: translateY(-50%); }
+        .dice3d-face .dot { width: 15%; height: 15%; min-width: 6px; min-height: 6px; background: #1a1a1a; border-radius: 50%; position: absolute; transform: translate(-50%, -50%); }
+        .dice3d-face .c { top: 50%; left: 50%; }
+        .dice3d-face .tl { top: 20%; left: 20%; }
+        .dice3d-face .tr { top: 20%; left: 80%; }
+        .dice3d-face .bl { top: 80%; left: 20%; }
+        .dice3d-face .br { top: 80%; left: 80%; }
+        .dice3d-face .ml { top: 50%; left: 20%; }
+        .dice3d-face .mr { top: 50%; left: 80%; }
         .dice3d-face.front { transform: rotateY(0deg) translateZ(var(--half)); }
         .dice3d-face.back { transform: rotateY(180deg) translateZ(var(--half)); }
         .dice3d-face.right { transform: rotateY(90deg) translateZ(var(--half)); }
@@ -207,8 +209,8 @@
 
     <div class="board" id="board">
         <div class="center-panel">
-            <div class="turn-indicator" id="turn-indicator">Завантаження гри...</div>
             <div class="timer-bar-container"><div class="timer-bar" id="timer-bar"></div></div>
+            <div class="turn-indicator" id="turn-indicator">Завантаження гри...</div>
             
             <div class="dice-area">
                 <button id="btn-roll" class="btn btn-roll" onclick="rollDice()" disabled>🎲 Кинути</button>
@@ -242,16 +244,16 @@
                     <div class="dice3d-face back"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
                     <div class="dice3d-face right"><div class="dot tl"></div><div class="dot c"></div><div class="dot br"></div></div>
                     <div class="dice3d-face left"><div class="dot tl"></div><div class="dot tr"></div><div class="dot bl"></div><div class="dot br"></div></div>
-                    <div class="dice3d-face top"><div class="dot tl"></div><div class="dot tr"></div><div class="dot c"></div><div class="dot bl"></div><div class="dot br"></div></div>
-                    <div class="dice3d-face bottom"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                    <div class="dice3d-face top"><div class="dot tl"></div><div class="dot br"></div></div>
+                    <div class="dice3d-face bottom"><div class="dot tl"></div><div class="dot tr"></div><div class="dot c"></div><div class="dot bl"></div><div class="dot br"></div></div>
                 </div>
                 <div class="dice3d-cube" id="dice3d-2">
                     <div class="dice3d-face front"><div class="dot c"></div></div>
                     <div class="dice3d-face back"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
                     <div class="dice3d-face right"><div class="dot tl"></div><div class="dot c"></div><div class="dot br"></div></div>
                     <div class="dice3d-face left"><div class="dot tl"></div><div class="dot tr"></div><div class="dot bl"></div><div class="dot br"></div></div>
-                    <div class="dice3d-face top"><div class="dot tl"></div><div class="dot tr"></div><div class="dot c"></div><div class="dot bl"></div><div class="dot br"></div></div>
-                    <div class="dice3d-face bottom"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                    <div class="dice3d-face top"><div class="dot tl"></div><div class="dot br"></div></div>
+                    <div class="dice3d-face bottom"><div class="dot tl"></div><div class="dot tr"></div><div class="dot c"></div><div class="dot bl"></div><div class="dot br"></div></div>
                 </div>
             </div>
             <p class="dice3d-label" id="dice3d-label">Крутимо кубики...</p>
@@ -319,11 +321,14 @@
         const myUsername = "{{ username }}";
 
         const groupColors = {
-            1:'#8e44ad', 2:'#8e44ad', 3:'#8e44ad', 6:'#3498db', 7:'#3498db', 8:'#3498db', 
-            11:'#e84393', 12:'#e84393', 13:'#e84393', 16:'#e67e22', 17:'#e67e22', 18:'#e67e22', 
-            21:'#c0392b', 22:'#c0392b', 23:'#c0392b', 26:'#f1c40f', 27:'#f1c40f', 28:'#f1c40f', 
-            31:'#27ae60', 32:'#27ae60', 33:'#27ae60', 36:'#2980b9', 37:'#2980b9', 38:'#2980b9'  
+            1:'#8e44ad', 2:'#8e44ad', 3:'#8e44ad', 4:'#64748b', 6:'#3498db', 7:'#3498db', 8:'#3498db', 
+            11:'#e84393', 12:'#e84393', 13:'#e84393', 14:'#64748b', 16:'#e67e22', 17:'#e67e22', 18:'#e67e22', 
+            21:'#c0392b', 22:'#c0392b', 23:'#c0392b', 24:'#64748b', 26:'#f1c40f', 27:'#f1c40f', 28:'#f1c40f', 
+            31:'#27ae60', 32:'#27ae60', 33:'#27ae60', 34:'#64748b', 36:'#2980b9', 37:'#2980b9', 38:'#2980b9'  
         };
+        const carCellsList = [4, 14, 24, 34];
+        const carPrice = 500;
+        const carRentByCount = { 1: 200, 2: 400, 3: 600, 4: 1000 };
         const colorGroupsList = [
             [1,2,3], [6,7,8], [11,12,13], [16,17,18],
             [21,22,23], [26,27,28], [31,32,33], [36,37,38]
@@ -334,17 +339,16 @@
             31: 400, 32: 400, 33: 400, 36: 500, 37: 500, 38: 500
         };
         const companyNames = {
-            1: "Кіоск", 2: "Кав'ярня", 3: "Пекарня", 6: "Автомийка", 7: "Шиномонтаж", 8: "СТО",
-            11: "Перукарня", 12: "Салон краси", 13: "Барбершоп", 16: "Піцерія", 17: "Суші-бар", 18: "Ресторан",
-            21: "Кінотеатр", 22: "Боулінг", 23: "Аквапарк", 26: "Аптека", 27: "Приватна клініка", 28: "Стоматологія",
-            31: "Провайдер", 32: "IT", 33: "ШІ-Стартап", 36: "ТЦ", 37: "Готель", 38: "Банк"
+            1: "Кіоск", 2: "Кав'ярня", 3: "Пекарня", 4: "Mercedes", 6: "Автомийка", 7: "Шиномонтаж", 8: "СТО",
+            11: "Перукарня", 12: "Салон краси", 13: "Барбершоп", 14: "BMW", 16: "Піцерія", 17: "Суші-бар", 18: "Ресторан",
+            21: "Кінотеатр", 22: "Боулінг", 23: "Аквапарк", 24: "Toyota", 26: "Аптека", 27: "Приватна клініка", 28: "Стоматологія",
+            31: "Провайдер", 32: "IT", 33: "ШІ-Стартап", 34: "Audi", 36: "ТЦ", 37: "Готель", 38: "Банк"
         };
         const propertyIcons = {
-            1: "🏪", 2: "☕", 3: "🍞", 6: "🚗", 7: "🔧", 8: "⚙️", 11: "💇", 12: "💄", 13: "💈",
-            16: "🍕", 17: "🍣", 18: "🍽️", 21: "🎬", 22: "🎳", 23: "🌊", 26: "💊", 27: "🏥", 28: "🦷",
-            31: "📡", 32: "💻", 33: "🤖", 36: "🏬", 37: "🏨", 38: "🏦"
+            1: "🏪", 2: "☕", 3: "🍞", 4: "🚗", 6: "🚗", 7: "🔧", 8: "⚙️", 11: "💇", 12: "💄", 13: "💈", 14: "🚗",
+            16: "🍕", 17: "🍣", 18: "🍽️", 21: "🎬", 22: "🎳", 23: "🌊", 24: "🚗", 26: "💊", 27: "🏥", 28: "🦷",
+            31: "📡", 32: "💻", 33: "🤖", 34: "🚗", 36: "🏬", 37: "🏨", 38: "🏦"
         };
-        const carBrandCells = { 4: "Mercedes", 14: "BMW", 24: "Toyota", 34: "Audi" };
 
         const board = document.getElementById('board');
         const cellsMap = {}; 
@@ -364,13 +368,14 @@
 
                 if (groupColors[i]) {
                     const icon = propertyIcons[i] || "🏠";
+                    const initPrice = carCellsList.includes(i) ? carPrice : 1000;
                     cell.innerHTML = `
-                        <div class="color-bar" id="colorbar-${i}" style="background-color: ${groupColors[i]}"><span id="rent-${i}">1000</span></div>
+                        <div class="color-bar" id="colorbar-${i}" style="background-color: ${groupColors[i]}"><span id="rent-${i}">${initPrice}</span></div>
                         <div class="cell-content">
                             <div><span class="cell-icon">${icon}</span> ${companyNames[i]}</div>
                             <div style="font-size: 0.8em; color: #dc2626; font-weight: bold; display:none;" id="mortgage-info-${i}">🔒 ЗАКЛАДЕНО</div>
-                            <div class="tokens-container" id="tokens-${i}"></div>
                         </div>
+                        <div class="tokens-container" id="tokens-${i}"></div>
                     `;
                 } else if (i === 0 || i === 10 || i === 20 || i === 30) {
                     cell.classList.add('corner');
@@ -380,18 +385,10 @@
                     else cell.classList.add('corner-police');
                     const cornerData = { 0: ["🏁", "СТАРТ"], 10: ["⛓️", "ТЮРМА"], 20: ["🅿️", "ПАРКОВКА"], 30: ["🚔", "ПОЛІЦІЯ"] };
                     const [ico, txt] = cornerData[i];
-                    cell.innerHTML = `<div class="cell-content" style="justify-content: center;"><div class="cell-icon">${ico}</div><div>${txt}</div><div class="tokens-container" id="tokens-${i}"></div></div>`;
-                } else if (carBrandCells[i]) {
-                    cell.innerHTML = `
-                        <div class="color-bar" id="colorbar-${i}" style="background-color: #64748b;"><span id="rent-${i}">2000</span></div>
-                        <div class="cell-content">
-                            <div><span class="cell-icon">🚗</span> ${carBrandCells[i]}</div>
-                            <div class="tokens-container" id="tokens-${i}"></div>
-                        </div>
-                    `;
+                    cell.innerHTML = `<div class="cell-content" style="justify-content: center;"><div class="cell-icon">${ico}</div><div>${txt}</div></div><div class="tokens-container" id="tokens-${i}"></div>`;
                 } else {
                     cell.classList.add('chance-cell');
-                    cell.innerHTML = `<div class="cell-content" style="justify-content: center;"><div class="chance-question">❓</div><div class="tokens-container" id="tokens-${i}"></div></div>`;
+                    cell.innerHTML = `<div class="cell-content" style="justify-content: center;"><div class="chance-question">❓</div></div><div class="tokens-container" id="tokens-${i}"></div>`;
                 }
 
                 if (i < 11) { cell.style.gridRow = '11'; cell.style.gridColumn = (11 - i).toString(); cell.classList.add('cell-row-bottom'); }
@@ -472,29 +469,36 @@
                 cellsMap[i].style.backgroundColor = '';
                 cellsMap[i].classList.remove('mortgaged');
                 if(groupColors[i]) {
-                    document.getElementById(`colorbar-${i}`).innerHTML = '<span id="rent-' + i + '">1000</span>';
-                    document.getElementById(`mortgage-info-${i}`).style.display = 'none';
+                    const defVal = carCellsList.includes(i) ? carPrice : 1000;
+                    document.getElementById(`colorbar-${i}`).innerHTML = '<span id="rent-' + i + '">' + defVal + '</span>';
+                    const mInfo = document.getElementById('mortgage-info-' + i);
+                    if (mInfo) mInfo.style.display = 'none';
                 }
             }
             
             for (const [cellStr, ownerName] of Object.entries(state.properties)) {
                 const cellIndex = parseInt(cellStr);
                 const ownerColor = state.players_data[ownerName].color;
-                cellsMap[cellIndex].style.border = `3px solid ${ownerColor}`;
-                const hex = ownerColor.replace('#','');
-                const r = parseInt(hex.slice(0,2), 16), g = parseInt(hex.slice(2,4), 16), b = parseInt(hex.slice(4,6), 16);
-                cellsMap[cellIndex].style.backgroundColor = `rgba(${r},${g},${b},0.18)`;
+                cellsMap[cellIndex].style.border = '';
+                cellsMap[cellIndex].style.backgroundColor = ownerColor;
                 if (state.mortgages && state.mortgages[cellStr]) {
                     cellsMap[cellIndex].classList.add('mortgaged');
                     document.getElementById(`colorbar-${cellIndex}`).innerHTML = '🔒';
                     const mInfo = document.getElementById(`mortgage-info-${cellIndex}`);
-                    mInfo.style.display = 'block';
-                    mInfo.innerText = `🔒 ЗАКЛАДЕНО (${state.mortgages[cellStr]} хід.)`;
+                    if (mInfo) { mInfo.style.display = 'block'; mInfo.innerText = `🔒 ЗАКЛАДЕНО (${state.mortgages[cellStr]} хід.)`; }
                 } else {
-                    const upgrades = state.upgrades[cellStr] || 0;
-                    const rentVal = rentPrices[cellIndex] * (1 + upgrades * 2);
-                    document.getElementById(`colorbar-${cellIndex}`).innerHTML = '<span id="rent-' + cellIndex + '">' + rentVal + '</span>' + (upgrades > 0 ? '⭐'.repeat(upgrades) : '');
-                    document.getElementById(`mortgage-info-${cellIndex}`).style.display = 'none';
+                    let rentVal;
+                    if (carCellsList.includes(cellIndex)) {
+                        const nCars = carCellsList.filter(p => state.properties[p] === ownerName).length;
+                        rentVal = carRentByCount[nCars] || 0;
+                        document.getElementById(`colorbar-${cellIndex}`).innerHTML = '<span id="rent-' + cellIndex + '">' + rentVal + '</span>';
+                    } else {
+                        const upgrades = state.upgrades[cellStr] || 0;
+                        rentVal = rentPrices[cellIndex] * (1 + upgrades * 2);
+                        document.getElementById(`colorbar-${cellIndex}`).innerHTML = '<span id="rent-' + cellIndex + '">' + rentVal + '</span>' + (upgrades > 0 ? '<span class="color-bar-stars">' + '⭐'.repeat(upgrades) + '</span>' : '');
+                    }
+                    const mInfo = document.getElementById(`mortgage-info-${cellIndex}`);
+                    if (mInfo) mInfo.style.display = 'none';
                 }
             }
 
@@ -571,8 +575,12 @@
             }
 
             if (state.waiting_for_buy) {
-                if (isMyTurn) { btnBuy.style.display = 'block'; btnSkip.style.display = 'block'; } 
-                else { btnRoll.style.display = 'block'; btnRoll.disabled = true; btnRoll.innerText = 'Очікування рішення...'; }
+                if (isMyTurn) {
+                    btnBuy.style.display = 'block';
+                    btnSkip.style.display = 'block';
+                    const myPos = state.players_data[myUsername].pos;
+                    btnBuy.innerText = carCellsList.includes(myPos) ? 'Купити (500)' : 'Купити (1000)';
+                } else { btnRoll.style.display = 'block'; btnRoll.disabled = true; btnRoll.innerText = 'Очікування рішення...'; }
             } else {
                 btnRoll.style.display = 'block';
                 if (state.pending_trade_from === myUsername) {
@@ -583,12 +591,13 @@
                     btnRoll.innerText = state.players_data[myUsername].jail_turns > 0 ? '🎲 Кинути (Спроба дубля)' : '🎲 Кинути кубики';
                     
                     const myPos = state.players_data[myUsername].pos;
-                    if (state.properties[myPos] === myUsername && !state.has_upgraded_this_turn) {
+                    if (state.properties[myPos] === myUsername && !state.has_upgraded_this_turn && !carCellsList.includes(myPos)) {
                         const myGroup = colorGroupsList.find(g => g.includes(myPos));
                         if (myGroup) {
                             const ownsAll = myGroup.every(p => state.properties[p] === myUsername);
                             const currentLevel = state.upgrades[myPos] || 0;
-                            if (ownsAll && currentLevel < 3 && state.players_data[myUsername].balance >= 500) {
+                            const minOtherInGroup = Math.min(...myGroup.filter(p => p !== myPos).map(p => state.upgrades[p] || 0));
+                            if (ownsAll && currentLevel < 3 && minOtherInGroup >= currentLevel && state.players_data[myUsername].balance >= 500) {
                                 btnUpgrade.style.display = 'block';
                             }
                         }
@@ -660,31 +669,35 @@
             if (myUsername !== currentTurnPlayer || globalGameState.players_data[myUsername].bankrupt) return;
             if (globalGameState.properties[pos] !== myUsername) return;
 
-            const upgrades = globalGameState.upgrades[pos] || 0;
+            const isCar = carCellsList.includes(pos);
+            const upgrades = isCar ? 0 : (globalGameState.upgrades[pos] || 0);
             const isMortgaged = globalGameState.mortgages && globalGameState.mortgages[pos];
             const myBalance = globalGameState.players_data[myUsername].balance;
             
             document.getElementById('manage-title').innerText = companyNames[pos];
-            let info = `Покращень: ${upgrades}<br>`;
+            let info = isCar
+                ? `Автомобілів у вас: ${carCellsList.filter(p => globalGameState.properties[p] === myUsername).length}<br>Оренда залежить від кількості авто.<br>`
+                : `Покращень: ${upgrades}<br>`;
             if (isMortgaged) info += `<span style="color:#e74c3c; font-weight:bold;">ЗАКЛАДЕНО</span>`;
             document.getElementById('manage-info').innerHTML = info;
 
             const btnContainer = document.getElementById('manage-buttons');
             btnContainer.innerHTML = '';
 
-            const myGroup = colorGroupsList.find(g => g.includes(pos));
-            const ownsAll = myGroup.every(p => globalGameState.properties[p] === myUsername);
-            if (ownsAll && !isMortgaged && upgrades < 3 && !globalGameState.has_upgraded_this_turn) {
-                btnContainer.innerHTML += `<button class="manage-prop-btn btn-unmortgage" ${myBalance < 500 ? 'disabled':''} onclick="manageProp(${pos}, 'upgrade')">Покращити (500)</button>`;
-            }
-            if (upgrades > 0) {
-                btnContainer.innerHTML += `<button class="manage-prop-btn btn-sell-up" onclick="manageProp(${pos}, 'sell_upgrade')">Продати 1 покращення (+500)</button>`;
-            }
-            if (upgrades === 0 && !isMortgaged) {
-                btnContainer.innerHTML += `<button class="manage-prop-btn btn-mortgage" onclick="manageProp(${pos}, 'mortgage')">Закласти майно (+500)</button>`;
-            }
-            if (isMortgaged) {
-                btnContainer.innerHTML += `<button class="manage-prop-btn btn-unmortgage" ${myBalance < 1000 ? 'disabled':''} onclick="manageProp(${pos}, 'unmortgage')">Викупити із застави (1000)</button>`;
+            if (isCar) {
+                if (!isMortgaged) btnContainer.innerHTML += `<button class="manage-prop-btn btn-mortgage" onclick="manageProp(${pos}, 'mortgage')">Закласти (+250)</button>`;
+                if (isMortgaged) btnContainer.innerHTML += `<button class="manage-prop-btn btn-unmortgage" ${myBalance < 500 ? 'disabled':''} onclick="manageProp(${pos}, 'unmortgage')">Викупити із застави (500)</button>`;
+            } else {
+                const myGroup = colorGroupsList.find(g => g.includes(pos));
+                const ownsAll = myGroup ? myGroup.every(p => globalGameState.properties[p] === myUsername) : false;
+                const minOtherInGroup = myGroup ? Math.min(...myGroup.filter(p => p !== pos).map(p => globalGameState.upgrades[p] || 0)) : 0;
+                const canUpgradeEvenly = (minOtherInGroup >= upgrades);
+                if (ownsAll && !isMortgaged && upgrades < 3 && !globalGameState.has_upgraded_this_turn && canUpgradeEvenly) {
+                    btnContainer.innerHTML += `<button class="manage-prop-btn btn-unmortgage" ${myBalance < 500 ? 'disabled':''} onclick="manageProp(${pos}, 'upgrade')">Покращити (500)</button>`;
+                }
+                if (upgrades > 0) btnContainer.innerHTML += `<button class="manage-prop-btn btn-sell-up" onclick="manageProp(${pos}, 'sell_upgrade')">Продати 1 покращення (+500)</button>`;
+                if (upgrades === 0 && !isMortgaged) btnContainer.innerHTML += `<button class="manage-prop-btn btn-mortgage" onclick="manageProp(${pos}, 'mortgage')">Закласти майно (+500)</button>`;
+                if (isMortgaged) btnContainer.innerHTML += `<button class="manage-prop-btn btn-unmortgage" ${myBalance < 1000 ? 'disabled':''} onclick="manageProp(${pos}, 'unmortgage')">Викупити із застави (1000)</button>`;
             }
             document.getElementById('manage-modal').style.display = 'flex';
         }

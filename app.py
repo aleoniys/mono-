@@ -104,6 +104,12 @@ def get_lobby_rooms():
     """Кімнати, які ще не почали гру — показуємо тільки їх у лобі."""
     return {k: v for k, v in active_rooms.items() if not v.get('started', False)}
 PURCHASABLE_CELLS = [1,2,3, 6,7,8, 11,12,13, 16,17,18, 21,22,23, 26,27,28, 31,32,33, 36,37,38]
+CAR_CELLS = [4, 14, 24, 34]
+CAR_PRICE = 500
+def car_rent(n_cars):
+    """Оренда за автомобілі: 1=200, 2=400, 3=600, 4=1000."""
+    return 200 * n_cars
+CHANCE_CELLS = [5, 9, 15, 19, 25, 29, 35, 39]
 COLOR_GROUPS = [[1,2,3], [6,7,8], [11,12,13], [16,17,18], [21,22,23], [26,27,28], [31,32,33], [36,37,38]]
 RENT_PRICES = {
     1: 50, 2: 50, 3: 50, 6: 100, 7: 100, 8: 100, 11: 150, 12: 150, 13: 150,
@@ -295,6 +301,13 @@ def handle_roll_dice(data):
     if player != current_turn_player or state['waiting_for_buy'] or state['debt']: return
     if state.get('pending_trade_from') == player: return
 
+    if state['players_data'][player].get('skip_next_turn', False):
+        state['players_data'][player]['skip_next_turn'] = False
+        emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'⏭️ {player} пропускає хід (забув ключі).'}, to=room_name)
+        pass_turn(state, room)
+        emit('update_state', state, to=room_name)
+        return
+
     dice1 = random.randint(1, 6)
     dice2 = random.randint(1, 6)
     total = dice1 + dice2
@@ -342,6 +355,10 @@ def handle_roll_dice(data):
         player_data['balance'] += 2000
         emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} проходить СТАРТ: +2000 балів!'}, to=room_name)
 
+    if pos == 0:
+        player_data['balance'] += 1000
+        emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} потрапив на СТАРТ: бонус +1000 балів!'}, to=room_name)
+
     if pos == 30:
         player_data['pos'] = 10 
         player_data['jail_turns'] = 3
@@ -350,13 +367,16 @@ def handle_roll_dice(data):
         emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} потрапляє до тюрми!'}, to=room_name)
         pass_turn(state, room)
     else:
-        if pos in PURCHASABLE_CELLS:
+        if pos in PURCHASABLE_CELLS or pos in CAR_CELLS:
             if pos in state['properties']:
                 owner = state['properties'][pos]
                 if owner != player and str(pos) not in state.get('mortgages', {}):
-                    upgrades = state['upgrades'].get(str(pos), 0)
-                    rent = RENT_PRICES[pos] * (1 + upgrades * 2) 
-                    
+                    if pos in CAR_CELLS:
+                        n_cars = sum(1 for p in CAR_CELLS if state['properties'].get(p) == owner)
+                        rent = car_rent(n_cars)
+                    else:
+                        upgrades = state['upgrades'].get(str(pos), 0)
+                        rent = RENT_PRICES[pos] * (1 + upgrades * 2)
                     if player_data['balance'] >= rent:
                         player_data['balance'] -= rent
                         state['players_data'][owner]['balance'] += rent
@@ -369,6 +389,35 @@ def handle_roll_dice(data):
                     pass_turn(state, room)
             else:
                 state['waiting_for_buy'] = True
+        elif pos in CHANCE_CELLS:
+            effect = random.randint(1, 6)
+            if effect == 1:
+                player_data['pos'] = (pos - 1) % 40
+                emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — один крок у зворотному напрямку! Тепер на клітинці {(pos - 1) % 40}.'}, to=room_name)
+            elif effect == 2:
+                lost = int(player_data['balance'] * 0.25)
+                player_data['balance'] = max(0, player_data['balance'] - lost)
+                emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — ви розвелися, дружина забрала 25% активів (−{lost} балів).'}, to=room_name)
+            elif effect == 3:
+                state['players_data'][player]['skip_next_turn'] = True
+                emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — ви забули ключі від дому. Пропускаєте один хід!'}, to=room_name)
+            elif effect == 4:
+                player_data['pos'] = 10
+                player_data['jail_turns'] = 3
+                state['extra_turn'] = False
+                player_data['doubles_rolled'] = 0
+                emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — СБУ провело обшуки. Ви потрапляєте в тюрму!'}, to=room_name)
+                pass_turn(state, room)
+                emit('update_state', state, to=room_name)
+                return
+            elif effect == 5:
+                div = int(player_data['balance'] * 0.10)
+                player_data['balance'] += div
+                emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — дивіденди 10% від депозиту (+{div} балів)!'}, to=room_name)
+            else:
+                player_data['balance'] += 1500
+                emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — ви отримали спадок (+1500 балів)!'}, to=room_name)
+            pass_turn(state, room)
         elif pos not in [0, 10, 20]:
             chance_penalty = random.choice([100, 250, 500, 1000])
             if player_data['balance'] >= chance_penalty:
@@ -414,8 +463,12 @@ def handle_buy_property(data):
     player = current_user.username
     if state.get('pending_trade_from') == player: return
     if state['waiting_for_buy']:
-        state['players_data'][player]['balance'] -= 1000
-        state['properties'][state['players_data'][player]['pos']] = player
+        buy_pos = state['players_data'][player]['pos']
+        price = CAR_PRICE if buy_pos in CAR_CELLS else 1000
+        if state['players_data'][player]['balance'] < price:
+            return
+        state['players_data'][player]['balance'] -= price
+        state['properties'][buy_pos] = player
         state['waiting_for_buy'] = False
         pass_turn(state, room)
         emit('update_state', state, to=room_name)
@@ -446,19 +499,24 @@ def handle_manage_property(data):
     if state['properties'].get(pos) != player: return
 
     p_data = state['players_data'][player]
-    upgrades = state['upgrades'].get(str(pos), 0)
+    is_car_cell = pos in CAR_CELLS
+    upgrades = 0 if is_car_cell else state['upgrades'].get(str(pos), 0)
     is_mortgaged = str(pos) in state.get('mortgages', {})
+    car_mortgage_val = 250
+    car_unmortgage_val = 500
 
-    if action == 'upgrade' and not state.get('has_upgraded_this_turn', False):
+    if action == 'upgrade' and not is_car_cell and not state.get('has_upgraded_this_turn', False):
         group = next((g for g in COLOR_GROUPS if pos in g), None)
         owns_all = all(state['properties'].get(p) == player for p in group)
-        if owns_all and not is_mortgaged and upgrades < 3 and p_data['balance'] >= 500:
+        min_other = min(state['upgrades'].get(str(p), 0) for p in group if p != pos) if group else 0
+        can_upgrade_evenly = (min_other >= upgrades)
+        if owns_all and not is_mortgaged and upgrades < 3 and p_data['balance'] >= 500 and can_upgrade_evenly:
             p_data['balance'] -= 500
             state['upgrades'][str(pos)] = upgrades + 1
             state['has_upgraded_this_turn'] = True
             emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} покращує клітинку {pos}!'}, to=room_name)
 
-    elif action == 'sell_upgrade':
+    elif action == 'sell_upgrade' and not is_car_cell:
         if upgrades > 0:
             p_data['balance'] += 500
             state['upgrades'][str(pos)] = upgrades - 1
@@ -466,13 +524,15 @@ def handle_manage_property(data):
 
     elif action == 'mortgage':
         if upgrades == 0 and not is_mortgaged:
-            p_data['balance'] += 500
-            state['mortgages'][str(pos)] = 10 
+            amount = car_mortgage_val if is_car_cell else 500
+            p_data['balance'] += amount
+            state['mortgages'][str(pos)] = 10
             emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} закладає клітинку {pos}. У нього є 10 ходів на викуп!'}, to=room_name)
 
     elif action == 'unmortgage':
-        if is_mortgaged and p_data['balance'] >= 1000:
-            p_data['balance'] -= 1000
+        need = car_unmortgage_val if is_car_cell else 1000
+        if is_mortgaged and p_data['balance'] >= need:
+            p_data['balance'] -= need
             del state['mortgages'][str(pos)]
             emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} викупає клітинку {pos} із застави!'}, to=room_name)
 
