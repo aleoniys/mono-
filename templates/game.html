@@ -37,6 +37,7 @@
         .color-bar { width: 100%; height: 24%; border-bottom: none; flex-shrink: 0; display: flex; justify-content: center; align-items: center; gap: 2px; font-size: clamp(5px, 0.9vmin, 10px); color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.3); font-weight: 600; }
         .color-bar .cell-icon { font-size: clamp(8px, 1.4vmin, 14px); }
         .cell-content { padding: 2px 4px; word-wrap: break-word; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; align-items: center; width: 100%; font-size: clamp(5px, 1.1vmin, 10px); color: #374151; }
+        .cell-content .cell-icon { font-size: clamp(8px, 1.2vmin, 12px); margin-right: 1px; }
         .tokens-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; padding-bottom: 2px; width: 100%; }
         .token { width: clamp(6px, 1.5vmin, 16px); height: clamp(6px, 1.5vmin, 16px); border-radius: 50%; border: 1px solid #fff; box-shadow: 0 0 3px #000; z-index: 10; }
         @keyframes hop { 0% { transform: translateY(0); } 50% { transform: translateY(-50%) scale(1.1); } 100% { transform: translateY(0); } }
@@ -382,7 +383,7 @@
                 cellsMap[i].style.border = '';
                 cellsMap[i].classList.remove('mortgaged');
                 if(groupColors[i]) {
-                    document.getElementById(`colorbar-${i}`).innerHTML = '';
+                    document.getElementById(`colorbar-${i}`).innerHTML = '<span class="cell-icon">' + (propertyIcons[i] || '🏠') + '</span>';
                     document.getElementById(`rent-${i}`).innerText = rentPrices[i];
                     document.getElementById(`rent-info-${i}`).style.display = 'block';
                     document.getElementById(`mortgage-info-${i}`).style.display = 'none';
@@ -403,7 +404,7 @@
                 } else {
                     const upgrades = state.upgrades[cellStr] || 0;
                     if (upgrades > 0) {
-                        document.getElementById(`colorbar-${cellIndex}`).innerHTML = '⭐'.repeat(upgrades);
+                        document.getElementById(`colorbar-${cellIndex}`).innerHTML = '<span class="cell-icon">' + (propertyIcons[cellIndex] || '🏠') + '</span>' + '⭐'.repeat(upgrades);
                         document.getElementById(`rent-${cellIndex}`).innerText = rentPrices[cellIndex] * (1 + upgrades * 2);
                     }
                 }
