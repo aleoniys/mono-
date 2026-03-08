@@ -2,126 +2,116 @@
 <html lang="uk">
 <head>
     <meta charset="UTF-8">
-    <title>Вхід - Монополія</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Вхід — Монополія</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* Стилі для всієї сторінки */
+        * { box-sizing: border-box; }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #D4E7D0; /* Світло-зелений фон, як на дошці */
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(145deg, #e8f4ea 0%, #d4e7d0 50%, #c5dfc0 100%);
+            min-height: 100vh;
+            margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh; /* Висота на весь екран */
-            margin: 0;
+            padding: 20px;
         }
-
-        /* Стилі для білої картки по центру */
         .login-card {
-            background-color: white;
-            padding: 40px;
-            border-radius: 15px; /* Закруглені кути */
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); /* М'яка тінь */
-            width: 300px;
+            background: #fff;
+            padding: 48px 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(26, 95, 74, 0.12), 0 0 0 1px rgba(26, 95, 74, 0.06);
+            width: 100%;
+            max-width: 380px;
             text-align: center;
-            border: 2px solid #333; /* Темна рамка для контрасту */
         }
-
-        /* Заголовок */
-        h2 {
-            margin-top: 0;
-            color: #333;
-            font-size: 28px;
-            margin-bottom: 20px;
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #1a5f4a;
+            margin: 0 0 8px 0;
+            letter-spacing: -0.02em;
         }
-
-        /* Повідомлення про помилки */
+        .subtitle {
+            color: #6b7b6e;
+            font-size: 0.95rem;
+            margin-bottom: 32px;
+        }
         .error-message {
-            color: #E3000F;
-            background-color: #ffe6e6;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            font-size: 14px;
+            color: #b91c1c;
+            background: #fef2f2;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-size: 0.9rem;
+            border: 1px solid #fecaca;
         }
-
-        /* Поля для вводу тексту та паролю */
         input[type="text"],
         input[type="password"] {
-            width: 100%; /* На всю ширину картки */
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            box-sizing: border-box; /* Щоб padding не збільшував ширину */
-            font-size: 16px;
-            transition: border-color 0.3s;
+            width: 100%;
+            padding: 14px 18px;
+            margin-bottom: 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
-
-        /* Коли ми натискаємо на поле вводу */
-        input[type="text"]:focus,
-        input[type="password"]:focus {
-            border-color: #4CAF50; /* Зелена рамка */
+        input::placeholder { color: #9ca3af; }
+        input:focus {
             outline: none;
+            border-color: #1a5f4a;
+            box-shadow: 0 0 0 4px rgba(26, 95, 74, 0.15);
         }
-
-        /* Велика кнопка входу */
         button {
             width: 100%;
-            background-color: #E3000F; /* Червоний колір Монополії */
-            color: white;
-            padding: 14px;
+            background: linear-gradient(180deg, #c41e3a 0%, #a01830 100%);
+            color: #fff;
+            padding: 16px;
             border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            font-weight: bold;
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 1.05rem;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.3s, transform 0.1s;
+            transition: transform 0.15s, box-shadow 0.2s;
+            box-shadow: 0 4px 14px rgba(196, 30, 58, 0.35);
         }
-
-        /* Ефект при наведенні мишки на кнопку */
         button:hover {
-            background-color: #C2000D;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(196, 30, 58, 0.4);
         }
-
-        /* Ефект при кліку на кнопку */
-        button:active {
-            transform: scale(0.98); /* Кнопка трохи зменшується */
-        }
-
-        /* Посилання на реєстрацію */
+        button:active { transform: translateY(0); }
         .register-link {
             display: block;
-            margin-top: 20px;
-            color: #555;
+            margin-top: 24px;
+            color: #1a5f4a;
             text-decoration: none;
-            font-size: 14px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            transition: color 0.2s;
         }
-
-        .register-link:hover {
-            color: #E3000F;
-            text-decoration: underline;
-        }
+        .register-link:hover { color: #0f3d32; text-decoration: underline; }
     </style>
 </head>
 <body>
-
     <div class="login-card">
-        <h2>Монополія</h2>
-
+        <h1 class="logo">Монополія</h1>
+        <p class="subtitle">Увійдіть, щоб грати</p>
         {% with messages = get_flashed_messages() %}
-          {% if messages %}
-            <div class="error-message">{{ messages[0] }}</div>
-          {% endif %}
+            {% if messages %}
+                <div class="error-message">{{ messages[0] }}</div>
+            {% endif %}
         {% endwith %}
-
         <form method="POST" action="/login">
-            <input type="text" name="username" placeholder="Ім'я гравця" required>
-            <input type="password" name="password" placeholder="Пароль" required>
-            <button type="submit">УВІЙТИ У ГРУ</button>
+            <input type="text" name="username" placeholder="Ім'я гравця" required autocomplete="username">
+            <input type="password" name="password" placeholder="Пароль" required autocomplete="current-password">
+            <button type="submit">Увійти в гру</button>
         </form>
-        
-        <a href="/register" class="register-link">Ще не грали? Створити акаунт</a>
+        <a href="/register" class="register-link">Немає акаунта? Зареєструватися</a>
     </div>
-
 </body>
 </html>
