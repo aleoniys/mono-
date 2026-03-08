@@ -101,10 +101,17 @@ def game(room_name):
 active_rooms = {}
 
 # Завантаження даних клітинок з board_cells.json — єдине джерело правди для цін, оренди, залогу тощо.
-_BOARD_JSON_PATH = os.path.join(os.path.dirname(__file__), 'board_cells.json')
-with open(_BOARD_JSON_PATH, 'r', encoding='utf-8') as _f:
-    BOARD_DATA = json.load(_f)
-BOARD_BY_ID = {c['id']: c for c in BOARD_DATA['cells']}
+_BOARD_JSON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'board_cells.json')
+try:
+    with open(_BOARD_JSON_PATH, 'r', encoding='utf-8') as _f:
+        BOARD_DATA = json.load(_f)
+    if 'cells' not in BOARD_DATA or not BOARD_DATA['cells']:
+        raise ValueError('board_cells.json must contain "cells" array')
+except Exception as e:
+    import sys
+    print(f'[WARN] Could not load board_cells.json: {e}', file=sys.stderr)
+    BOARD_DATA = {'cells': [], 'upgrade_cost_per_star': 500, 'sell_star_value': 500}
+BOARD_BY_ID = {c['id']: c for c in BOARD_DATA.get('cells', [])}
 
 def _get_cell(pos, key, default=None):
     c = BOARD_BY_ID.get(pos)
@@ -612,4 +619,5 @@ def handle_trade_response(data):
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    socketio.run(app, host='0.0.0.0', port=port, debug=True)
+    # eventlet потрібен для SocketIO на Replit/Cloud Run
+    socketio.run(app, host='0.0.0.0', port=port, debug=True, allow_unsafe_werkzeug=True)
