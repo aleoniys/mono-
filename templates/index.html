@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Монополія - Головна</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; margin: 0; color: #333; }
+        
+        .navbar { background-color: #D4E7D0; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #a3c4a0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .navbar h1 { margin: 0; font-size: 24px; color: #2c3e50; }
+        .nav-links a { margin-left: 20px; text-decoration: none; color: #2c3e50; font-weight: bold; transition: color 0.3s; }
+        .nav-links a:hover { color: #E3000F; }
+        
+        .container { max-width: 800px; margin: 40px auto; padding: 20px; background: white; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        
+        /* Оновлений блок створення кімнати */
+        .create-room-section { display: flex; gap: 10px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px dashed #eee; align-items: center; }
+        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; }
+        
+        /* Стилі для випадаючого списку */
+        select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 16px; background-color: white; cursor: pointer; }
+        
+        button { background-color: #E3000F; color: white; border: none; padding: 10px 20px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        button:hover { background-color: #C2000D; }
+        
+        .room-item { background-color: #f9f9f9; padding: 15px; margin-bottom: 10px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #4CAF50; }
+        
+        /* Якщо кімната повна, робимо лінію сірою */
+        .room-item.full { border-left-color: #999; opacity: 0.8; }
+        
+        .room-info strong { font-size: 18px; display: block; }
+        .room-info span { font-size: 14px; color: #777; }
+        
+        .join-btn { background-color: #4CAF50; }
+        .join-btn:hover { background-color: #45a049; }
+        
+        /* Вимкнена кнопка (коли місць немає) */
+        .join-btn:disabled { background-color: #ccc; cursor: not-allowed; }
+
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <h1>Монополія</h1>
+        <div class="nav-links">
+            <span>Вітаємо, <strong>{{ username }}</strong>!</span>
+            <a href="/profile">Мій профіль</a>
+            <a href="/logout">Вийти</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Ігрове лобі</h2>
+
+        <div class="create-room-section">
+            <input type="text" id="new-room-name" placeholder="Придумайте назву кімнати...">
+            
+            <select id="max-players">
+                <option value="3">3 гравці</option>
+                <option value="4" selected>4 гравці</option>
+                <option value="5">5 гравців</option>
+                <option value="6">6 гравців</option>
+            </select>
+
+            <button onclick="createRoom()">Створити гру</button>
+        </div>
+
+        <h3>Доступні ігри:</h3>
+        <div id="rooms-list">
+            <p style="color: #888;">Поки що немає активних кімнат. Створіть першу!</p>
+        </div>
+    </div>
+
+    <script>
+        const socket = io();
+        const myUsername = "{{ username }}"; 
+
+        socket.on('connect', function() {
+            socket.emit('request_rooms');
+        });
+
+        function createRoom() {
+            const roomName = document.getElementById('new-room-name').value;
+            const maxPlayers = document.getElementById('max-players').value; 
+            
+            if (roomName.trim() !== "") {
+                socket.emit('create_room', { room_name: roomName, max_players: maxPlayers });
+                document.getElementById('new-room-name').value = ''; 
+            }
+        }
+
+        function joinRoom(roomName) {
+            socket.emit('join_game_room', { room_name: roomName });
+            // Прибрали набридливий alert, тепер все зрозуміло по зміні кнопки
+        }
+
+        socket.on('update_rooms', function(data) {
+            const roomsContainer = document.getElementById('rooms-list');
+            roomsContainer.innerHTML = ""; 
+            
+            const rooms = data.rooms;
+            const roomNames = Object.keys(rooms);
+
+            if (roomNames.length === 0) {
+                roomsContainer.innerHTML = '<p style="color: #888;">Поки що немає активних кімнат. Створіть першу!</p>';
+                return;
+            }
+
+            roomNames.forEach(function(roomName) {
+                const roomData = rooms[roomName];
+                const playersInRoom = roomData.players;
+                const maxPlayers = roomData.max_players;
+                
+                const isFull = playersInRoom.length >= maxPlayers;
+                const amIInRoom = playersInRoom.includes(myUsername);
+
+                const roomDiv = document.createElement('div');
+                roomDiv.className = 'room-item';
+                if (isFull) roomDiv.classList.add('full'); 
+                
+                // ТУТ ВІДОБРАЖАЮТЬСЯ ГРАВЦІ
+                let playersText = playersInRoom.length > 0 ? playersInRoom.join(', ') : 'Порожньо';
+
+                let buttonHtml = '';
+                if (amIInRoom) {
+                    // Якщо ми чекаємо інших гравців, покажемо це на кнопці
+                    buttonHtml = `<button class="join-btn" disabled style="background-color: #2196F3; color: white;">Очікування гравців...</button>`;
+                } else if (isFull) {
+                    buttonHtml = `<button class="join-btn" disabled>Місць немає</button>`;
+                } else {
+                    buttonHtml = `<button class="join-btn" onclick="joinRoom('${roomName}')">Приєднатися</button>`;
+                }
+                
+                roomDiv.innerHTML = `
+                    <div class="room-info">
+                        <strong>${roomName}</strong>
+                        <span>Гравці: ${playersInRoom.length}/${maxPlayers} <b>(${playersText})</b></span>
+                    </div>
+                    ${buttonHtml}
+                `;
+                
+                roomsContainer.appendChild(roomDiv);
+            });
+        });
+
+        // НОВИЙ КОД: Слухаємо команду на старт гри
+        socket.on('start_game', function(data) {
+            // Щойно сервер каже, що кімната повна, перекидаємо гравця на нову сторінку!
+            window.location.href = "/game/" + data.room_name;
+        });
+    </script>
+</body>
+</html>

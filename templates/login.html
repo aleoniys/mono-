@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Вхід - Монополія</title>
+    <style>
+        /* Стилі для всієї сторінки */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #D4E7D0; /* Світло-зелений фон, як на дошці */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh; /* Висота на весь екран */
+            margin: 0;
+        }
+
+        /* Стилі для білої картки по центру */
+        .login-card {
+            background-color: white;
+            padding: 40px;
+            border-radius: 15px; /* Закруглені кути */
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15); /* М'яка тінь */
+            width: 300px;
+            text-align: center;
+            border: 2px solid #333; /* Темна рамка для контрасту */
+        }
+
+        /* Заголовок */
+        h2 {
+            margin-top: 0;
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 20px;
+        }
+
+        /* Повідомлення про помилки */
+        .error-message {
+            color: #E3000F;
+            background-color: #ffe6e6;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        /* Поля для вводу тексту та паролю */
+        input[type="text"],
+        input[type="password"] {
+            width: 100%; /* На всю ширину картки */
+            padding: 12px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            box-sizing: border-box; /* Щоб padding не збільшував ширину */
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        /* Коли ми натискаємо на поле вводу */
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            border-color: #4CAF50; /* Зелена рамка */
+            outline: none;
+        }
+
+        /* Велика кнопка входу */
+        button {
+            width: 100%;
+            background-color: #E3000F; /* Червоний колір Монополії */
+            color: white;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.1s;
+        }
+
+        /* Ефект при наведенні мишки на кнопку */
+        button:hover {
+            background-color: #C2000D;
+        }
+
+        /* Ефект при кліку на кнопку */
+        button:active {
+            transform: scale(0.98); /* Кнопка трохи зменшується */
+        }
+
+        /* Посилання на реєстрацію */
+        .register-link {
+            display: block;
+            margin-top: 20px;
+            color: #555;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .register-link:hover {
+            color: #E3000F;
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <h2>Монополія</h2>
+
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            <div class="error-message">{{ messages[0] }}</div>
+          {% endif %}
+        {% endwith %}
+
+        <form method="POST" action="/login">
+            <input type="text" name="username" placeholder="Ім'я гравця" required>
+            <input type="password" name="password" placeholder="Пароль" required>
+            <button type="submit">УВІЙТИ У ГРУ</button>
+        </form>
+        
+        <a href="/register" class="register-link">Ще не грали? Створити акаунт</a>
+    </div>
+
+</body>
+</html>
