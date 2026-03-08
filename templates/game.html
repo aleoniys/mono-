@@ -37,11 +37,18 @@
 
         .center-panel { grid-column: 2 / 11; grid-row: 2 / 11; background: linear-gradient(180deg, #f8faf9 0%, #f0f7f2 100%); display: flex; flex-direction: column; overflow: hidden; position: relative; border-radius: 4px; }
         .turn-indicator { background: linear-gradient(180deg, #1a5f4a 0%, #0f3d32 100%); color: #fff; text-align: center; padding: clamp(8px, 1.2vw, 12px); font-size: clamp(14px, 2vmin, 18px); font-weight: 700; flex-shrink: 0; transition: background 0.3s; }
-        .timer-bar-container { width: 100%; height: 20px; background: #e5e7eb; border-radius: 10px; overflow: hidden; }
-        .timer-bar { height: 100%; background: linear-gradient(to right, #22c55e 0%, #22c55e 33%, #eab308 33%, #eab308 66%, #dc2626 66%, #dc2626 100%); width: 100%; transition: width 1s linear; border-radius: 8px; }
+        .timer-bar-container { width: 100%; height: 18px; background: #e5e7eb; border-radius: 9px; overflow: hidden; }
+        .timer-bar { height: 100%; width: 100%; transition: width 1s linear; border-radius: 7px; }
 
         .dice-area { background: #fff; padding: clamp(10px, 1.5vw, 18px); text-align: center; border-bottom: 2px solid #e5e7eb; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .dice-faces { display: flex; gap: 16px; justify-content: center; align-items: center; margin: 8px 0; }
+        .dice-faces.dice-land { animation: diceLand 0.5s ease-out 1; }
+        @keyframes diceLand {
+            0% { transform: translateY(-25px); opacity: 0.9; }
+            60% { transform: translateY(4px); opacity: 1; }
+            80% { transform: translateY(-6px); }
+            100% { transform: translateY(0); }
+        }
         .dice-face {
             width: clamp(44px, 8vmin, 64px);
             height: clamp(44px, 8vmin, 64px);
@@ -54,13 +61,16 @@
             grid-template-rows: 1fr 1fr 1fr;
             gap: 2px;
             padding: 12%;
-            transition: transform 0.15s;
         }
-        .dice-face.roll { animation: diceShake 0.1s ease-in-out 3; }
-        @keyframes diceShake {
-            0%, 100% { transform: rotate(0deg); }
-            25% { transform: rotate(-8deg); }
-            75% { transform: rotate(8deg); }
+        .dice-face.roll { animation: diceThrow 0.12s ease-in-out infinite; }
+        .dice-face.roll:nth-child(1) { animation-delay: 0s; }
+        .dice-face.roll:nth-child(2) { animation-delay: 0.06s; }
+        @keyframes diceThrow {
+            0% { transform: translateY(0) rotate(0deg) scale(1); }
+            25% { transform: translateY(-18px) rotate(90deg) scale(1.08); }
+            50% { transform: translateY(-8px) rotate(180deg) scale(1.05); }
+            75% { transform: translateY(-14px) rotate(270deg) scale(1.06); }
+            100% { transform: translateY(0) rotate(360deg) scale(1); }
         }
         .dice-face .pip {
             width: 100%;
@@ -81,8 +91,10 @@
         .dice-face[data-value="4"] .pip:nth-child(1), .dice-face[data-value="4"] .pip:nth-child(3), .dice-face[data-value="4"] .pip:nth-child(7), .dice-face[data-value="4"] .pip:nth-child(9) { opacity: 1; }
         .dice-face[data-value="5"] .pip:nth-child(1), .dice-face[data-value="5"] .pip:nth-child(3), .dice-face[data-value="5"] .pip:nth-child(5), .dice-face[data-value="5"] .pip:nth-child(7), .dice-face[data-value="5"] .pip:nth-child(9) { opacity: 1; }
         .dice-face[data-value="6"] .pip:nth-child(1), .dice-face[data-value="6"] .pip:nth-child(2), .dice-face[data-value="6"] .pip:nth-child(3), .dice-face[data-value="6"] .pip:nth-child(7), .dice-face[data-value="6"] .pip:nth-child(8), .dice-face[data-value="6"] .pip:nth-child(9) { opacity: 1; }
+        .dice-result-wrap { min-height: 5.5em; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .dice-label { font-size: clamp(10px, 1.2vw, 14px); color: #6b7b6e; margin-bottom: 4px; }
         .dice-total { font-size: clamp(13px, 1.6vw, 17px); color: #1a1a1a; font-weight: 700; margin-top: 6px; }
+        .dice-double-msg { font-size: clamp(12px, 1.4vw, 15px); color: #16a34a; font-weight: 700; margin-top: 4px; min-height: 1.4em; }
         .jail-warning { font-size: clamp(10px, 1.5vmin, 13px); color: #b91c1c; font-weight: 600; margin-top: 6px; }
 
         .chat-container { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
@@ -133,7 +145,7 @@
             <div class="timer-bar-container"><div class="timer-bar" id="timer-bar"></div></div>
             
             <div class="dice-area">
-                <div id="dice-result">Гра готова до початку!</div>
+                <div class="dice-result-wrap"><div id="dice-result">Гра готова до початку!</div></div>
                 <div class="action-buttons" id="action-buttons">
                     <button id="btn-roll" class="btn btn-roll" onclick="rollDice()" disabled>🎲 Кинути</button>
                     <button id="btn-buy" class="btn btn-buy" style="display:none;" onclick="buyProperty()">Купити (1000)</button>
@@ -287,16 +299,22 @@
             socket.emit('request_game_state', { room_name: currentRoom });
         });
 
+        function setTimerBarColor(bar, timeLeft) {
+            if (timeLeft > 40) bar.style.backgroundColor = '#22c55e';
+            else if (timeLeft > 20) bar.style.backgroundColor = '#eab308';
+            else bar.style.backgroundColor = '#dc2626';
+        }
         function startTimer(isMyTurn, targetTurnPlayer) {
             clearInterval(turnTimer);
             timeLeft = 60;
             const bar = document.getElementById('timer-bar');
             bar.style.width = '100%';
+            setTimerBarColor(bar, timeLeft);
 
             turnTimer = setInterval(() => {
                 timeLeft--;
                 bar.style.width = ((timeLeft / 60) * 100) + '%';
-
+                setTimerBarColor(bar, timeLeft);
                 if (timeLeft <= 0) {
                     clearInterval(turnTimer);
                     // Тепер БУДЬ-ЯКИЙ клієнт може повідомити сервер про закінчення часу поточного гравця
@@ -494,14 +512,18 @@
                 `;
                 if (ticks > 10) {
                     clearInterval(spinInterval);
-                    const doubleMsg = (data.is_double && !data.jail_msg) ? '<div class="dice-total" style="color: #16a34a;">🎲 ДУБЛЬ! Додатковий хід!</div>' : '';
+                    const doubleText = (data.is_double && !data.jail_msg) ? '🎲 ДУБЛЬ! Додатковий хід!' : '';
                     diceResultDiv.innerHTML = `
                         <div class="dice-label">${data.player} кинув:</div>
-                        <div class="dice-faces">${diceHtml(data.dice1)}${diceHtml(data.dice2)}</div>
+                        <div class="dice-faces dice-land">${diceHtml(data.dice1)}${diceHtml(data.dice2)}</div>
                         <div class="dice-total">Разом: ${data.total}</div>
-                        ${doubleMsg}
+                        <div class="dice-double-msg">${doubleText}</div>
                         ${data.jail_msg ? `<div class="jail-warning">${data.jail_msg}</div>` : ''}
                     `;
+                    setTimeout(function() {
+                        const faces = diceResultDiv.querySelector('.dice-faces');
+                        if (faces) faces.classList.remove('dice-land');
+                    }, 550);
                 }
             }, 100);
         });
