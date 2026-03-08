@@ -29,7 +29,7 @@ def get_db():
         return None
 
 def init_db():
-    """Створює таблицю users, якщо її ще немає."""
+    """Створює таблиці users, rooms, game_results якщо їх ще немає."""
     conn = get_db()
     if not conn:
         return
@@ -44,11 +44,95 @@ def init_db():
                     bonus_points INT NOT NULL DEFAULT 0
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS rooms (
+                    name VARCHAR(255) PRIMARY KEY,
+                    created_by VARCHAR(255) NOT NULL,
+                    max_players INT NOT NULL,
+                    status VARCHAR(50) NOT NULL DEFAULT 'waiting',
+                    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS game_results (
+                    id SERIAL PRIMARY KEY,
+                    room_name VARCHAR(255) NOT NULL,
+                    winner_username VARCHAR(255),
+                    players TEXT NOT NULL,
+                    finished_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                )
+            """)
         conn.commit()
     except Exception as e:
         conn.rollback()
         import sys
         print(f'[WARN] init_db: {e}', file=sys.stderr)
+    finally:
+        conn.close()
+
+def db_save_room(room_name, created_by, max_players, status='waiting'):
+    conn = get_db()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO rooms (name, created_by, max_players, status)
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (name) DO UPDATE SET status = EXCLUDED.status, created_by = EXCLUDED.created_by, max_players = EXCLUDED.max_players
+            """, (room_name, created_by, max_players, status))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        conn.close()
+
+def db_update_room_status(room_name, status):
+    conn = get_db()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cur:
+            cur.execute("UPDATE rooms SET status = %s WHERE name = %s", (status, room_name))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        conn.close()
+
+def db_save_game_result(room_name, winner_username, players_list):
+    conn = get_db()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                INSERT INTO game_results (room_name, winner_username, players)
+                VALUES (%s, %s, %s)
+            """, (room_name, winner_username or None, json.dumps(players_list)))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        conn.close()
+
+def load_rooms_from_db():
+    """Заповнює active_rooms кімнатами з БД (status='waiting') — після перезапуску сервера."""
+    conn = get_db()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT name, created_by, max_players FROM rooms WHERE status = 'waiting'")
+            for row in cur.fetchall():
+                name, created_by, max_players = row[0], row[1], row[2]
+                if name not in active_rooms:
+                    active_rooms[name] = {
+                        'name': name,
+                        'players': [],
+                        'max_players': max_players,
+                        'created_by': created_by or '',
+                    }
     finally:
         conn.close()
 
@@ -273,7 +357,10 @@ def check_win(room_name, room, state):
     active_players = [p for p in room['players'] if not state['players_data'][p].get('bankrupt', False)]
     if len(active_players) <= 1:
         winner = active_players[0] if active_players else "Ніхто"
-        
+
+        db_save_game_result(room_name, winner if winner != "Ніхто" else None, room['players'])
+        db_update_room_status(room_name, 'finished')
+
         users = load_users()
         for p in room['players']:
             if p in users:
@@ -283,8 +370,8 @@ def check_win(room_name, room, state):
                     users[p]['bonus_points'] += 10
         save_users(users)
 
-        emit('update_state', state, to=room_name) 
-        emit('game_over', {'winner': winner}, to=room_name) 
+        emit('update_state', state, to=room_name)
+        emit('game_over', {'winner': winner}, to=room_name)
         return True
     return False
 
@@ -292,10 +379,12 @@ def check_win(room_name, room, state):
 def handle_create_room(data):
     room_name = data['room_name']
     player_name = current_user.username
+    max_players = int(data['max_players'])
     if room_name not in active_rooms:
-        active_rooms[room_name] = {'name': room_name, 'players': [], 'max_players': int(data['max_players'])}
+        active_rooms[room_name] = {'name': room_name, 'players': [], 'max_players': max_players, 'created_by': player_name}
         join_room(room_name)
         active_rooms[room_name]['players'].append(player_name)
+        db_save_room(room_name, player_name, max_players, 'waiting')
         emit('update_rooms', {'rooms': get_lobby_rooms()}, broadcast=True)
         if len(active_rooms[room_name]['players']) == active_rooms[room_name]['max_players']:
             room = active_rooms[room_name]
@@ -313,6 +402,7 @@ def handle_create_room(data):
                     'jail_turns': 0, 'bankrupt': False, 'doubles_rolled': 0
                 }
             room['started'] = True
+            db_update_room_status(room_name, 'playing')
             emit('start_game', {'room_name': room_name}, to=room_name)
             emit('update_rooms', {'rooms': get_lobby_rooms()}, broadcast=True)
 
@@ -332,6 +422,7 @@ def handle_leave_room(data):
             room['players'].remove(player_name)
             leave_room(room_name)
             if len(room['players']) == 0:
+                db_update_room_status(room_name, 'finished')
                 del active_rooms[room_name]
             emit('update_rooms', {'rooms': get_lobby_rooms()}, broadcast=True)
 
@@ -365,6 +456,7 @@ def handle_join_room(data):
                     'jail_turns': 0, 'bankrupt': False, 'doubles_rolled': 0
                 }
             room['started'] = True
+            db_update_room_status(room_name, 'playing')
             emit('start_game', {'room_name': room_name}, to=room_name)
             emit('update_rooms', {'rooms': get_lobby_rooms()}, broadcast=True)
 
@@ -710,6 +802,7 @@ def handle_trade_response(data):
 
 if __name__ == '__main__':
     init_db()
+    load_rooms_from_db()
     port = int(os.environ.get('PORT', 5000))
     # debug=False щоб на Replit не запускався reloader (інакше порт не слухається)
     import sys
