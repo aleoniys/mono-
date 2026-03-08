@@ -4,6 +4,7 @@ from flask_login import LoginManager, UserMixin, login_user, login_required, log
 import json
 import os
 import random
+import threading
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'my_super_secret_key'
@@ -291,7 +292,8 @@ def handle_roll_dice(data):
     state = room['state']
     current_turn_player = state['players_order'][state['turn_index']]
     
-    if player != current_turn_player or state['waiting_for_buy'] or state['debt']: return 
+    if player != current_turn_player or state['waiting_for_buy'] or state['debt']: return
+    if state.get('pending_trade_from') == player: return
 
     dice1 = random.randint(1, 6)
     dice2 = random.randint(1, 6)
@@ -388,7 +390,8 @@ def handle_pay_debt(data):
     if not room: return
     state = room['state']
     player = current_user.username
-    
+    if state.get('pending_trade_from') == player: return
+
     if state['debt'] and state['debt']['player'] == player:
         debt_amount = state['debt']['amount']
         creditor = state['debt']['creditor']
@@ -409,6 +412,7 @@ def handle_buy_property(data):
     room = active_rooms[room_name]
     state = room['state']
     player = current_user.username
+    if state.get('pending_trade_from') == player: return
     if state['waiting_for_buy']:
         state['players_data'][player]['balance'] -= 1000
         state['properties'][state['players_data'][player]['pos']] = player
@@ -421,6 +425,7 @@ def handle_skip_buy(data):
     room_name = data['room_name']
     room = active_rooms[room_name]
     state = room['state']
+    if state.get('pending_trade_from') == current_user.username: return
     if state['waiting_for_buy']:
         state['waiting_for_buy'] = False
         pass_turn(state, room)
@@ -437,6 +442,7 @@ def handle_manage_property(data):
     action = data['action']
 
     if state['players_order'][state['turn_index']] != player: return
+    if state.get('pending_trade_from') == player: return
     if state['properties'].get(pos) != player: return
 
     p_data = state['players_data'][player]
@@ -472,10 +478,28 @@ def handle_manage_property(data):
 
     emit('update_state', state, to=room_name)
 
+def clear_trade_timeout(room_name, sender_username):
+    room = active_rooms.get(room_name)
+    if not room or not room.get('state'): return
+    state = room['state']
+    if state.get('pending_trade_from') != sender_username: return
+    state['pending_trade_from'] = None
+    socketio.emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'⏳ Час на відповідь вийшов. Обмін скасовано.'}, to=room_name)
+    socketio.emit('update_state', state, to=room_name)
+
 @socketio.on('propose_trade')
 def handle_propose_trade(data):
+    room_name = data['room_name']
+    if room_name not in active_rooms: return
+    room = active_rooms[room_name]
+    state = room['state']
+    state['pending_trade_from'] = current_user.username
     data['sender'] = current_user.username
-    emit('trade_offer', data, to=data['room_name'])
+    emit('trade_offer', data, to=room_name)
+    emit('update_state', state, to=room_name)
+    t = threading.Timer(30.0, clear_trade_timeout, [room_name, current_user.username])
+    t.daemon = True
+    t.start()
 
 @socketio.on('trade_response')
 def handle_trade_response(data):
@@ -483,8 +507,10 @@ def handle_trade_response(data):
     room = active_rooms[room_name]
     state = room['state']
     sender, target = data['sender'], data['target']
-    
-    if not data['accepted']: return
+    state['pending_trade_from'] = None
+    if not data['accepted']:
+        emit('update_state', state, to=room_name)
+        return
     offer_money, request_money = int(data['offer_money']), int(data['request_money'])
     offer_props, request_props = [int(p) for p in data['offer_props']], [int(p) for p in data['request_props']]
 
