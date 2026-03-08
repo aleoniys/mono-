@@ -62,6 +62,13 @@ def init_db():
                     finished_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
                 )
             """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS game_states (
+                    room_name VARCHAR(255) PRIMARY KEY,
+                    state TEXT NOT NULL,
+                    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+                )
+            """)
         conn.commit()
     except Exception as e:
         conn.rollback()
@@ -116,23 +123,85 @@ def db_save_game_result(room_name, winner_username, players_list):
     finally:
         conn.close()
 
-def load_rooms_from_db():
-    """Заповнює active_rooms кімнатами з БД (status='waiting') — після перезапуску сервера."""
+def db_save_game_state(room_name, state):
     conn = get_db()
     if not conn:
         return
     try:
         with conn.cursor() as cur:
-            cur.execute("SELECT name, created_by, max_players FROM rooms WHERE status = 'waiting'")
+            cur.execute("""
+                INSERT INTO game_states (room_name, state, updated_at)
+                VALUES (%s, %s, NOW())
+                ON CONFLICT (room_name) DO UPDATE SET state = EXCLUDED.state, updated_at = NOW()
+            """, (room_name, json.dumps(state)))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        conn.close()
+
+def db_load_game_state(room_name):
+    conn = get_db()
+    if not conn:
+        return None
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT state FROM game_states WHERE room_name = %s", (room_name,))
+            row = cur.fetchone()
+        return json.loads(row[0]) if row else None
+    except Exception:
+        return None
+    finally:
+        conn.close()
+
+def db_delete_game_state(room_name):
+    conn = get_db()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cur:
+            cur.execute("DELETE FROM game_states WHERE room_name = %s", (room_name,))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        conn.close()
+
+def persist_game_state(room_name, state):
+    """Зберігає стан гри в БД перед відправкою клієнтам."""
+    if room_name and state:
+        db_save_game_state(room_name, state)
+
+def load_rooms_from_db():
+    """Заповнює active_rooms з БД: waiting-кімнати та playing-кімнати зі збереженим станом гри."""
+    conn = get_db()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT name, created_by, max_players, status FROM rooms WHERE status IN ('waiting', 'playing')")
             for row in cur.fetchall():
-                name, created_by, max_players = row[0], row[1], row[2]
-                if name not in active_rooms:
+                name, created_by, max_players, status = row[0], row[1], row[2], row[3]
+                if name in active_rooms:
+                    continue
+                if status == 'waiting':
                     active_rooms[name] = {
                         'name': name,
                         'players': [],
                         'max_players': max_players,
                         'created_by': created_by or '',
                     }
+                else:
+                    state = db_load_game_state(name)
+                    if state and 'players_order' in state:
+                        active_rooms[name] = {
+                            'name': name,
+                            'players': list(state['players_order']),
+                            'max_players': max_players,
+                            'created_by': created_by or '',
+                            'state': state,
+                            'started': True,
+                        }
     finally:
         conn.close()
 
@@ -360,6 +429,7 @@ def check_win(room_name, room, state):
 
         db_save_game_result(room_name, winner if winner != "Ніхто" else None, room['players'])
         db_update_room_status(room_name, 'finished')
+        db_delete_game_state(room_name)
 
         users = load_users()
         for p in room['players']:
@@ -370,6 +440,7 @@ def check_win(room_name, room, state):
                     users[p]['bonus_points'] += 10
         save_users(users)
 
+        persist_game_state(room_name, state)
         emit('update_state', state, to=room_name)
         emit('game_over', {'winner': winner}, to=room_name)
         return True
@@ -403,6 +474,7 @@ def handle_create_room(data):
                 }
             room['started'] = True
             db_update_room_status(room_name, 'playing')
+            db_save_game_state(room_name, room['state'])
             emit('start_game', {'room_name': room_name}, to=room_name)
             emit('update_rooms', {'rooms': get_lobby_rooms()}, broadcast=True)
 
@@ -436,6 +508,7 @@ def handle_join_room(data):
     join_room(room_name)
     if room.get('started'):
         if player_name in room['players']:
+            persist_game_state(room_name, room['state'])
             emit('update_state', room['state'], to=request.sid)
         return
     if player_name not in room['players'] and len(room['players']) < room['max_players']:
@@ -457,13 +530,16 @@ def handle_join_room(data):
                 }
             room['started'] = True
             db_update_room_status(room_name, 'playing')
+            db_save_game_state(room_name, room['state'])
             emit('start_game', {'room_name': room_name}, to=room_name)
             emit('update_rooms', {'rooms': get_lobby_rooms()}, broadcast=True)
 
 @socketio.on('request_game_state')
 def handle_req_state(data):
     if data['room_name'] in active_rooms and 'state' in active_rooms[data['room_name']]:
-        emit('update_state', active_rooms[data['room_name']]['state'], to=data['room_name'])
+        state = active_rooms[data['room_name']]['state']
+        persist_game_state(data['room_name'], state)
+        emit('update_state', state, to=data['room_name'])
 
 @socketio.on('send_chat_message')
 def handle_chat(data): emit('receive_chat_message', {'sender': current_user.username, 'message': data['message']}, to=data['room_name'])
@@ -493,6 +569,7 @@ def handle_turn_timeout(data):
     state['waiting_for_buy'] = False
     state['extra_turn'] = False
     pass_turn(state, room)
+    persist_game_state(room_name, state)
     emit('update_state', state, to=room_name)
 
 @socketio.on('roll_dice')
@@ -511,6 +588,7 @@ def handle_roll_dice(data):
         state['players_data'][player]['skip_next_turn'] = False
         emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'⏭️ {player} пропускає хід (забув ключі).'}, to=room_name)
         pass_turn(state, room)
+        persist_game_state(room_name, state)
         emit('update_state', state, to=room_name)
         return
 
@@ -533,6 +611,7 @@ def handle_roll_dice(data):
             player_data['jail_turns'] -= 1
             emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} не викидає дубль. У тюрмі: {player_data["jail_turns"]} х.'}, to=room_name)
             pass_turn(state, room)
+            persist_game_state(room_name, state)
             emit('update_state', state, to=room_name)
             return
     else:
@@ -545,6 +624,7 @@ def handle_roll_dice(data):
                 player_data['doubles_rolled'] = 0
                 state['extra_turn'] = False
                 pass_turn(state, room)
+                persist_game_state(room_name, state)
                 emit('update_state', state, to=room_name)
                 return
             else:
@@ -614,6 +694,7 @@ def handle_roll_dice(data):
                 player_data['doubles_rolled'] = 0
                 emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — СБУ провело обшуки. Ви потрапляєте в тюрму!'}, to=room_name)
                 pass_turn(state, room)
+                persist_game_state(room_name, state)
                 emit('update_state', state, to=room_name)
                 return
             elif effect == 5:
@@ -636,6 +717,7 @@ def handle_roll_dice(data):
         else:
             pass_turn(state, room)
 
+    persist_game_state(room_name, state)
     emit('update_state', state, to=room_name)
 
 @socketio.on('pay_debt')
@@ -659,6 +741,7 @@ def handle_pay_debt(data):
             emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} успішно сплачує борг {debt_amount} балів!'}, to=room_name)
             state['debt'] = None
             pass_turn(state, room)
+            persist_game_state(room_name, state)
             emit('update_state', state, to=room_name)
 
 @socketio.on('buy_property')
@@ -677,6 +760,7 @@ def handle_buy_property(data):
         state['properties'][buy_pos] = player
         state['waiting_for_buy'] = False
         pass_turn(state, room)
+        persist_game_state(room_name, state)
         emit('update_state', state, to=room_name)
 
 @socketio.on('skip_buy')
@@ -688,6 +772,7 @@ def handle_skip_buy(data):
     if state['waiting_for_buy']:
         state['waiting_for_buy'] = False
         pass_turn(state, room)
+        persist_game_state(room_name, state)
         emit('update_state', state, to=room_name)
 
 @socketio.on('manage_property_action')
@@ -742,6 +827,7 @@ def handle_manage_property(data):
             del state['mortgages'][str(pos)]
             emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} викупає клітинку {pos} із застави!'}, to=room_name)
 
+    persist_game_state(room_name, state)
     emit('update_state', state, to=room_name)
 
 def clear_trade_timeout(room_name, sender_username):
@@ -750,6 +836,7 @@ def clear_trade_timeout(room_name, sender_username):
     state = room['state']
     if state.get('pending_trade_from') != sender_username: return
     state['pending_trade_from'] = None
+    persist_game_state(room_name, state)
     socketio.emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'⏳ Час на відповідь вийшов. Обмін скасовано.'}, to=room_name)
     socketio.emit('update_state', state, to=room_name)
 
@@ -761,6 +848,7 @@ def handle_propose_trade(data):
     state = room['state']
     state['pending_trade_from'] = current_user.username
     data['sender'] = current_user.username
+    persist_game_state(room_name, state)
     emit('trade_offer', data, to=room_name)
     emit('update_state', state, to=room_name)
     t = threading.Timer(30.0, clear_trade_timeout, [room_name, current_user.username])
@@ -775,6 +863,7 @@ def handle_trade_response(data):
     sender, target = data['sender'], data['target']
     state['pending_trade_from'] = None
     if not data['accepted']:
+        persist_game_state(room_name, state)
         emit('update_state', state, to=room_name)
         return
     offer_money, request_money = int(data['offer_money']), int(data['request_money'])
@@ -797,6 +886,7 @@ def handle_trade_response(data):
         state['properties'][p] = sender
         if str(p) in state['upgrades']: del state['upgrades'][str(p)]
 
+    persist_game_state(room_name, state)
     emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🤝 Успішна угода між {sender} та {target}!'}, to=room_name)
     emit('update_state', state, to=room_name)
 
