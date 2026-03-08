@@ -100,6 +100,10 @@ def game(room_name):
 # --- WEBSOCKETS ТА ЛОГІКА ГРИ ---
 active_rooms = {}
 
+def get_lobby_rooms():
+    """Кімнати, які ще не почали гру — показуємо тільки їх у лобі."""
+    return {k: v for k, v in active_rooms.items() if not v.get('started', False)}
+
 # Дані клітинок — з Python-модуля (працює на Replit без читання файлів)
 try:
     from board_cells_data import BOARD_DATA
