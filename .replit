@@ -1,5 +1,5 @@
 entrypoint = "app.py"
-run = "python3 app.py"
+run = "git pull --rebase 2>/dev/null || true; python3 app.py"
 modules = ["python-3.10:v18-20230807-322e88b"]
 
 [nix]
@@ -7,7 +7,7 @@ channel = "stable-24_11"
 packages = ["iana-etc"]
 
 [deployment]
-run = ["python3", "app.py"]
+run = ["sh", "-c", "git pull --rebase 2>/dev/null || true; exec python3 app.py"]
 deploymentTarget = "cloudrun"
 
 [[ports]]

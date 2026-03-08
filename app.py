@@ -51,7 +51,7 @@ def init_db():
                     max_players INT NOT NULL,
                     status VARCHAR(50) NOT NULL DEFAULT 'waiting',
                     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-                )
+                ) 
             """)
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS game_results (
