@@ -37,8 +37,8 @@
 
         .center-panel { grid-column: 2 / 11; grid-row: 2 / 11; background: linear-gradient(180deg, #f8faf9 0%, #f0f7f2 100%); display: flex; flex-direction: column; overflow: hidden; position: relative; border-radius: 4px; }
         .turn-indicator { background: linear-gradient(180deg, #1a5f4a 0%, #0f3d32 100%); color: #fff; text-align: center; padding: clamp(8px, 1.2vw, 12px); font-size: clamp(14px, 2vmin, 18px); font-weight: 700; flex-shrink: 0; transition: background 0.3s; }
-        .timer-bar-container { width: 100%; height: 6px; background: #e5e7eb; }
-        .timer-bar { height: 100%; background: linear-gradient(90deg, #1a5f4a, #22c55e); width: 100%; transition: width 1s linear, background 0.5s; border-radius: 0 2px 2px 0; }
+        .timer-bar-container { width: 100%; height: 20px; background: #e5e7eb; border-radius: 10px; overflow: hidden; }
+        .timer-bar { height: 100%; background: linear-gradient(to right, #22c55e 0%, #22c55e 33%, #eab308 33%, #eab308 66%, #dc2626 66%, #dc2626 100%); width: 100%; transition: width 1s linear; border-radius: 8px; }
 
         .dice-area { background: #fff; padding: clamp(10px, 1.5vw, 18px); text-align: center; border-bottom: 2px solid #e5e7eb; flex-shrink: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .dice-faces { display: flex; gap: 16px; justify-content: center; align-items: center; margin: 8px 0; }
@@ -48,7 +48,7 @@
             background: linear-gradient(145deg, #fff 0%, #f1f5f9 100%);
             border-radius: 10px;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.9);
-            border: 1px solid rgba(0,0,0,0.08);
+            border: 3px solid #1a1a1a;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
             grid-template-rows: 1fr 1fr 1fr;
@@ -292,13 +292,10 @@
             timeLeft = 60;
             const bar = document.getElementById('timer-bar');
             bar.style.width = '100%';
-            bar.style.backgroundColor = '#2ecc71';
 
             turnTimer = setInterval(() => {
                 timeLeft--;
                 bar.style.width = ((timeLeft / 60) * 100) + '%';
-                if (timeLeft < 15) bar.style.backgroundColor = '#e74c3c';
-                else if (timeLeft < 30) bar.style.backgroundColor = '#f1c40f';
 
                 if (timeLeft <= 0) {
                     clearInterval(turnTimer);
