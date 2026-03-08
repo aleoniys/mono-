@@ -133,10 +133,10 @@
         .modal h2 { margin: 0 0 16px 0; text-align: center; color: #1a5f4a; font-size: 1.35rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px; }
         .trade-timer { text-align: center; margin: 0 0 12px 0; font-size: 0.95rem; color: #6b7280; }
 
-        .dice3d-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; flex-direction: column; perspective: 1400px; }
+        .dice3d-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.88); z-index: 2000; display: flex; align-items: center; justify-content: center; flex-direction: column; perspective: 1400px; border-radius: 8px; }
         .dice3d-scene { display: flex; gap: 80px; align-items: center; justify-content: center; margin-bottom: 40px; }
-        .dice3d-cube { width: 80px; height: 80px; position: relative; transform-style: preserve-3d; transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1); transform: translateZ(0); }
-        .dice3d-face { position: absolute; width: 80px; height: 80px; background: #fff; backface-visibility: hidden; transform-style: preserve-3d; box-shadow: inset 0 0 6px rgba(0,0,0,0.2); border: 1px solid #e5e7eb; border-radius: 6px; }
+        .dice3d-cube { width: 80px; height: 80px; position: relative; transform-style: preserve-3d; transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform: translateZ(0); }
+        .dice3d-face { position: absolute; width: 80px; height: 80px; background: #fff; backface-visibility: hidden; transform-style: preserve-3d; box-shadow: inset 0 0 6px rgba(0,0,0,0.2); border: 1px solid #e5e7eb; border-radius: 0; }
         .dice3d-face .dot { width: 12px; height: 12px; background: #1a1a1a; border-radius: 50%; position: absolute; }
         .dice3d-face .c { top: 34px; left: 34px; }
         .dice3d-face .tl { top: 12px; left: 12px; }
@@ -200,10 +200,8 @@
                 </div>
             </div>
         </div>
-    </div>
-
-    <div id="dice3d-modal" class="dice3d-overlay" style="display:none;">
-        <div class="dice3d-scene">
+        <div id="dice3d-modal" class="dice3d-overlay" style="display:none;">
+            <div class="dice3d-scene">
             <div class="dice3d-cube" id="dice3d-1">
                 <div class="dice3d-face front"><div class="dot c"></div></div>
                 <div class="dice3d-face back"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
@@ -220,8 +218,9 @@
                 <div class="dice3d-face top"><div class="dot tl"></div><div class="dot tr"></div><div class="dot c"></div><div class="dot bl"></div><div class="dot br"></div></div>
                 <div class="dice3d-face bottom"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
             </div>
+            </div>
+            <p class="dice3d-label" id="dice3d-label">Крутимо кубики...</p>
         </div>
-        <p class="dice3d-label" id="dice3d-label">Крутимо кубики...</p>
     </div>
 
     <div id="manage-modal" class="modal-overlay">
@@ -605,17 +604,16 @@
                 d1.style.transform = dice3dPos[data.dice1];
                 d2.style.transform = dice3dPos[data.dice2];
                 labelEl.textContent = 'Разом: ' + data.total;
-            }, 900);
+            }, 280);
             setTimeout(function() {
                 modal.style.display = 'none';
                 diceResultDiv.innerHTML = `
                     <div class="dice-label">${data.player} кинув:</div>
-                    <div class="dice-faces">${diceHtml(data.dice1)}${diceHtml(data.dice2)}</div>
                     <div class="dice-total">Разом: ${data.total}</div>
                     <div class="dice-double-msg">${(data.is_double && !data.jail_msg) ? '🎲 ДУБЛЬ! Додатковий хід!' : ''}</div>
                     ${data.jail_msg ? '<div class="jail-warning">' + data.jail_msg + '</div>' : ''}
                 `;
-            }, 2500);
+            }, 1000);
         });
 
         // УПРАВЛІННЯ ВЛАСНІСТЮ
