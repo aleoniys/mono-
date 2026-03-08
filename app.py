@@ -1,33 +1,116 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_socketio import SocketIO, emit, join_room, leave_room 
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+from werkzeug.security import generate_password_hash, check_password_hash
 import json
 import os
 import random
 import threading
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'my_super_secret_key'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'my_super_secret_key')
 
 socketio = SocketIO(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 login_manager.login_message = None  # не показувати повідомлення при переході на логін 
 
+# PostgreSQL (Replit: можна перевизначити через Secrets — DATABASE_URL)
+DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://postgres:password@helium/heliumdb?sslmode=disable')
 USERS_FILE = 'users.json'
 
+def get_db():
+    if not DATABASE_URL:
+        return None
+    try:
+        import psycopg2
+        return psycopg2.connect(DATABASE_URL)
+    except Exception:
+        return None
+
+def init_db():
+    """Створює таблицю users, якщо її ще немає."""
+    conn = get_db()
+    if not conn:
+        return
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    username VARCHAR(255) PRIMARY KEY,
+                    password VARCHAR(255) NOT NULL,
+                    games_played INT NOT NULL DEFAULT 0,
+                    wins INT NOT NULL DEFAULT 0,
+                    bonus_points INT NOT NULL DEFAULT 0
+                )
+            """)
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        import sys
+        print(f'[WARN] init_db: {e}', file=sys.stderr)
+    finally:
+        conn.close()
+
 def load_users():
-    if not os.path.exists(USERS_FILE): return {}
-    with open(USERS_FILE, 'r', encoding='utf-8') as f: 
-        users = json.load(f)
-        for u in users:
-            if 'games_played' not in users[u]: users[u]['games_played'] = 0
-            if 'wins' not in users[u]: users[u]['wins'] = 0
-            if 'bonus_points' not in users[u]: users[u]['bonus_points'] = 0
+    conn = get_db()
+    if not conn:
+        if os.path.exists(USERS_FILE):
+            with open(USERS_FILE, 'r', encoding='utf-8') as f:
+                users = json.load(f)
+                for u in users:
+                    if 'games_played' not in users[u]: users[u]['games_played'] = 0
+                    if 'wins' not in users[u]: users[u]['wins'] = 0
+                    if 'bonus_points' not in users[u]: users[u]['bonus_points'] = 0
+                return users
+        return {}
+    try:
+        with conn.cursor() as cur:
+            cur.execute("SELECT username, password, games_played, wins, bonus_points FROM users")
+            rows = cur.fetchall()
+        users = {}
+        for r in rows:
+            users[r[0]] = {
+                'password': r[1],
+                'games_played': r[2] or 0,
+                'wins': r[3] or 0,
+                'bonus_points': r[4] or 0,
+            }
         return users
+    finally:
+        conn.close()
 
 def save_users(users_data):
-    with open(USERS_FILE, 'w', encoding='utf-8') as f: json.dump(users_data, f, indent=4)
+    conn = get_db()
+    if not conn:
+        with open(USERS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(users_data, f, indent=4)
+        return
+    try:
+        with conn.cursor() as cur:
+            for username, data in users_data.items():
+                cur.execute("""
+                    INSERT INTO users (username, password, games_played, wins, bonus_points)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (username) DO UPDATE SET
+                        password = EXCLUDED.password,
+                        games_played = EXCLUDED.games_played,
+                        wins = EXCLUDED.wins,
+                        bonus_points = EXCLUDED.bonus_points
+                """, (
+                    username,
+                    data.get('password', ''),
+                    data.get('games_played', 0),
+                    data.get('wins', 0),
+                    data.get('bonus_points', 0),
+                ))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        import sys
+        print(f'[WARN] save_users: {e}', file=sys.stderr)
+    finally:
+        conn.close()
 
 class User(UserMixin):
     def __init__(self, username):
@@ -49,7 +132,10 @@ def register():
         if username in users:
             flash('Це ім\'я вже зайняте.')
             return redirect(url_for('register'))
-        users[username] = {'password': password, 'games_played': 0, 'wins': 0, 'bonus_points': 0}
+        users[username] = {
+            'password': generate_password_hash(password, method='pbkdf2:sha256'),
+            'games_played': 0, 'wins': 0, 'bonus_points': 0
+        }
         save_users(users)
         return redirect(url_for('login'))
     return render_template('register.html')
@@ -60,7 +146,11 @@ def login():
         username = request.form.get('username')
         password = request.form.get('password')
         users = load_users()
-        if username in users and users[username]['password'] == password:
+        stored = users.get(username, {}).get('password', '')
+        if username in users and (
+            (stored.count('$') >= 2 and check_password_hash(stored, password))
+            or (stored == password)  # старий формат без хешу
+        ):
             user_obj = User(username)
             login_user(user_obj)
             return redirect(url_for('index'))
@@ -619,6 +709,7 @@ def handle_trade_response(data):
     emit('update_state', state, to=room_name)
 
 if __name__ == '__main__':
+    init_db()
     port = int(os.environ.get('PORT', 5000))
     # debug=False щоб на Replit не запускався reloader (інакше порт не слухається)
     import sys
