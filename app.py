@@ -100,17 +100,9 @@ def game(room_name):
 # --- WEBSOCKETS ТА ЛОГІКА ГРИ ---
 active_rooms = {}
 
-# Завантаження даних клітинок з board_cells.json — єдине джерело правди для цін, оренди, залогу тощо.
-_BOARD_JSON_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'board_cells.json')
-try:
-    with open(_BOARD_JSON_PATH, 'r', encoding='utf-8') as _f:
-        BOARD_DATA = json.load(_f)
-    if 'cells' not in BOARD_DATA or not BOARD_DATA['cells']:
-        raise ValueError('board_cells.json must contain "cells" array')
-except Exception as e:
-    import sys
-    print(f'[WARN] Could not load board_cells.json: {e}', file=sys.stderr)
-    BOARD_DATA = {'cells': [], 'upgrade_cost_per_star': 500, 'sell_star_value': 500}
+# Дані клітинок — з Python-модуля (працює на Replit без читання файлів)
+from board_cells_data import BOARD_DATA
+
 BOARD_BY_ID = {c['id']: c for c in BOARD_DATA.get('cells', [])}
 
 def _get_cell(pos, key, default=None):
