@@ -62,14 +62,14 @@
             gap: 2px;
             padding: 12%;
         }
-        .dice-face.roll { animation: diceThrow 0.12s ease-in-out infinite; }
-        .dice-face.roll:nth-child(1) { animation-delay: 0s; }
-        .dice-face.roll:nth-child(2) { animation-delay: 0.06s; }
+        .dice-face.roll { animation: diceThrow 1s linear infinite; }
+        .dice-face.roll:nth-child(2) { animation-delay: 0.15s; }
         @keyframes diceThrow {
             0% { transform: translateY(0) rotate(0deg) scale(1); }
-            25% { transform: translateY(-18px) rotate(90deg) scale(1.08); }
-            50% { transform: translateY(-8px) rotate(180deg) scale(1.05); }
-            75% { transform: translateY(-14px) rotate(270deg) scale(1.06); }
+            20% { transform: translateY(-12px) rotate(72deg) scale(1.05); }
+            40% { transform: translateY(-6px) rotate(144deg) scale(1.03); }
+            60% { transform: translateY(-10px) rotate(216deg) scale(1.05); }
+            80% { transform: translateY(-4px) rotate(288deg) scale(1.02); }
             100% { transform: translateY(0) rotate(360deg) scale(1); }
         }
         .dice-face .pip {
@@ -91,11 +91,11 @@
         .dice-face[data-value="4"] .pip:nth-child(1), .dice-face[data-value="4"] .pip:nth-child(3), .dice-face[data-value="4"] .pip:nth-child(7), .dice-face[data-value="4"] .pip:nth-child(9) { opacity: 1; }
         .dice-face[data-value="5"] .pip:nth-child(1), .dice-face[data-value="5"] .pip:nth-child(3), .dice-face[data-value="5"] .pip:nth-child(5), .dice-face[data-value="5"] .pip:nth-child(7), .dice-face[data-value="5"] .pip:nth-child(9) { opacity: 1; }
         .dice-face[data-value="6"] .pip:nth-child(1), .dice-face[data-value="6"] .pip:nth-child(2), .dice-face[data-value="6"] .pip:nth-child(3), .dice-face[data-value="6"] .pip:nth-child(7), .dice-face[data-value="6"] .pip:nth-child(8), .dice-face[data-value="6"] .pip:nth-child(9) { opacity: 1; }
-        .dice-result-wrap { min-height: 5.5em; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .dice-label { font-size: clamp(10px, 1.2vw, 14px); color: #6b7b6e; margin-bottom: 4px; }
-        .dice-total { font-size: clamp(13px, 1.6vw, 17px); color: #1a1a1a; font-weight: 700; margin-top: 6px; }
-        .dice-double-msg { font-size: clamp(12px, 1.4vw, 15px); color: #16a34a; font-weight: 700; margin-top: 4px; min-height: 1.4em; }
-        .jail-warning { font-size: clamp(10px, 1.5vmin, 13px); color: #b91c1c; font-weight: 600; margin-top: 6px; }
+        .dice-result-wrap { min-height: 7em; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .dice-label { font-size: clamp(10px, 1.2vw, 14px); color: #6b7b6e; margin-bottom: 4px; height: 1.3em; display: flex; align-items: center; justify-content: center; }
+        .dice-total { font-size: clamp(13px, 1.6vw, 17px); color: #1a1a1a; font-weight: 700; margin-top: 6px; height: 1.4em; display: flex; align-items: center; justify-content: center; }
+        .dice-double-msg { font-size: clamp(12px, 1.4vw, 15px); color: #16a34a; font-weight: 700; margin-top: 2px; height: 1.5em; display: flex; align-items: center; justify-content: center; }
+        .jail-warning { font-size: clamp(10px, 1.5vmin, 13px); color: #b91c1c; font-weight: 600; margin-top: 4px; height: 1.4em; min-height: 0; }
 
         .chat-container { display: flex; flex-direction: column; flex-grow: 1; overflow: hidden; }
         .chat-messages { flex-grow: 1; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #fff; }
@@ -496,33 +496,67 @@
         function payDebt() { socket.emit('pay_debt', { room_name: currentRoom }); }
         function upgradeProperty() { socket.emit('upgrade_property', { room_name: currentRoom }); document.getElementById('btn-upgrade').style.display = 'none'; }
 
-        function diceHtml(val) {
+        function diceHtml(val, id) {
             const pips = '<span class="pip"></span>'.repeat(9);
-            return `<div class="dice-face" data-value="${val}">${pips}</div>`;
+            const idAttr = id ? ` id="${id}"` : '';
+            return `<div class="dice-face" data-value="${val}"${idAttr}>${pips}</div>`;
         }
         socket.on('dice_rolled', function(data) {
             const diceResultDiv = document.getElementById('dice-result');
             let ticks = 0;
-            let spinInterval = setInterval(() => {
+            const v1 = Math.floor(Math.random() * 6) + 1, v2 = Math.floor(Math.random() * 6) + 1;
+            diceResultDiv.innerHTML = `
+                <div class="dice-label">Крутимо кубики...</div>
+                <div class="dice-faces roll" id="dice-faces-spin">${diceHtml(v1, 'dice-1')}${diceHtml(v2, 'dice-2')}</div>
+            `;
+            const spinInterval = setInterval(() => {
                 ticks++;
-                const v1 = Math.floor(Math.random() * 6) + 1, v2 = Math.floor(Math.random() * 6) + 1;
-                diceResultDiv.innerHTML = `
-                    <div class="dice-label">Крутимо кубики...</div>
-                    <div class="dice-faces roll">${diceHtml(v1)}${diceHtml(v2)}</div>
-                `;
-                if (ticks > 10) {
+                const d1 = document.getElementById('dice-1');
+                const d2 = document.getElementById('dice-2');
+                if (d1) d1.setAttribute('data-value', (Math.floor(Math.random() * 6) + 1).toString());
+                if (d2) d2.setAttribute('data-value', (Math.floor(Math.random() * 6) + 1).toString());
+                if (ticks >= 10) {
                     clearInterval(spinInterval);
-                    const doubleText = (data.is_double && !data.jail_msg) ? '🎲 ДУБЛЬ! Додатковий хід!' : '';
-                    diceResultDiv.innerHTML = `
-                        <div class="dice-label">${data.player} кинув:</div>
-                        <div class="dice-faces dice-land">${diceHtml(data.dice1)}${diceHtml(data.dice2)}</div>
-                        <div class="dice-total">Разом: ${data.total}</div>
-                        <div class="dice-double-msg">${doubleText}</div>
-                        ${data.jail_msg ? `<div class="jail-warning">${data.jail_msg}</div>` : ''}
-                    `;
+                    const face1 = document.getElementById('dice-1');
+                    const face2 = document.getElementById('dice-2');
+                    const faces = document.getElementById('dice-faces-spin');
+                    if (faces && face1 && face2) {
+                        face1.setAttribute('data-value', data.dice1);
+                        face2.setAttribute('data-value', data.dice2);
+                        face1.id = '';
+                        face2.id = '';
+                        faces.classList.remove('roll');
+                        faces.classList.add('dice-land');
+                        faces.id = '';
+                    }
+                    var labelEl = diceResultDiv.querySelector('.dice-label');
+                    if (labelEl) labelEl.textContent = data.player + ' кинув:';
+                    var totalEl = diceResultDiv.querySelector('.dice-total');
+                    if (!totalEl) {
+                        totalEl = document.createElement('div');
+                        totalEl.className = 'dice-total';
+                        faces.after(totalEl);
+                    }
+                    totalEl.textContent = 'Разом: ' + data.total;
+                    var doubleEl = diceResultDiv.querySelector('.dice-double-msg');
+                    if (!doubleEl) {
+                        doubleEl = document.createElement('div');
+                        doubleEl.className = 'dice-double-msg';
+                        totalEl.after(doubleEl);
+                    }
+                    doubleEl.textContent = (data.is_double && !data.jail_msg) ? '🎲 ДУБЛЬ! Додатковий хід!' : '';
+                    var jailEl = diceResultDiv.querySelector('.jail-warning');
+                    if (data.jail_msg) {
+                        if (!jailEl) {
+                            jailEl = document.createElement('div');
+                            jailEl.className = 'jail-warning';
+                            doubleEl.after(jailEl);
+                        }
+                        jailEl.textContent = data.jail_msg;
+                    } else if (jailEl) jailEl.remove();
                     setTimeout(function() {
-                        const faces = diceResultDiv.querySelector('.dice-faces');
-                        if (faces) faces.classList.remove('dice-land');
+                        var f = diceResultDiv.querySelector('.dice-faces');
+                        if (f) f.classList.remove('dice-land');
                     }, 550);
                 }
             }, 100);
