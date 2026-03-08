@@ -10,7 +10,8 @@ app.config['SECRET_KEY'] = 'my_super_secret_key'
 
 socketio = SocketIO(app)
 login_manager = LoginManager(app)
-login_manager.login_view = 'login' 
+login_manager.login_view = 'login'
+login_manager.login_message = None  # не показувати повідомлення при переході на логін 
 
 USERS_FILE = 'users.json'
 
@@ -97,6 +98,10 @@ def game(room_name):
 
 # --- WEBSOCKETS ТА ЛОГІКА ГРИ ---
 active_rooms = {}
+
+def get_lobby_rooms():
+    """Кімнати, які ще не почали гру — показуємо тільки їх у лобі."""
+    return {k: v for k, v in active_rooms.items() if not v.get('started', False)}
 PURCHASABLE_CELLS = [1,2,3, 6,7,8, 11,12,13, 16,17,18, 21,22,23, 26,27,28, 31,32,33, 36,37,38]
 COLOR_GROUPS = [[1,2,3], [6,7,8], [11,12,13], [16,17,18], [21,22,23], [26,27,28], [31,32,33], [36,37,38]]
 RENT_PRICES = {
@@ -167,10 +172,26 @@ def handle_create_room(data):
     room_name = data['room_name']
     if room_name not in active_rooms:
         active_rooms[room_name] = {'name': room_name, 'players': [], 'max_players': int(data['max_players'])}
-        emit('update_rooms', {'rooms': active_rooms}, broadcast=True)
+        emit('update_rooms', {'rooms': get_lobby_rooms()}, broadcast=True)
 
 @socketio.on('request_rooms')
-def handle_req_rooms(): emit('update_rooms', {'rooms': active_rooms})
+def handle_req_rooms():
+    emit('update_rooms', {'rooms': get_lobby_rooms()})
+
+@socketio.on('leave_game_room')
+def handle_leave_room(data):
+    room_name = data.get('room_name')
+    player_name = current_user.username
+    if room_name in active_rooms:
+        room = active_rooms[room_name]
+        if room.get('started'):
+            return
+        if player_name in room['players']:
+            room['players'].remove(player_name)
+            leave_room(room_name)
+            if len(room['players']) == 0:
+                del active_rooms[room_name]
+            emit('update_rooms', {'rooms': get_lobby_rooms()}, broadcast=True)
 
 @socketio.on('join_game_room')
 def handle_join_room(data):
@@ -178,24 +199,29 @@ def handle_join_room(data):
     player_name = current_user.username
     if room_name in active_rooms:
         room = active_rooms[room_name]
+        if room.get('started'):
+            return
         join_room(room_name) 
         if player_name not in room['players'] and len(room['players']) < room['max_players']:
             room['players'].append(player_name)
-            emit('update_rooms', {'rooms': active_rooms}, broadcast=True)
+            emit('update_rooms', {'rooms': get_lobby_rooms()}, broadcast=True)
             if len(room['players']) == room['max_players']:
                 colors = ['#e74c3c', '#3498db', '#2ecc71', '#f1c40f', '#9b59b6', '#e67e22']
+                order = random.sample(room['players'], len(room['players']))
                 room['state'] = {
-                    'turn_index': 0, 'players_order': room['players'], 'players_data': {}, 
+                    'turn_index': 0, 'players_order': order, 'players_data': {}, 
                     'properties': {}, 'upgrades': {}, 'mortgages': {}, 
                     'waiting_for_buy': False, 'has_upgraded_this_turn': False, 'debt': None,
                     'extra_turn': False
                 }
-                for i, p in enumerate(room['players']):
+                for i, p in enumerate(order):
                     room['state']['players_data'][p] = {
                         'pos': 0, 'balance': 10000, 'color': colors[i], 
                         'jail_turns': 0, 'bankrupt': False, 'doubles_rolled': 0
                     }
+                room['started'] = True
                 emit('start_game', {'room_name': room_name}, to=room_name)
+                emit('update_rooms', {'rooms': get_lobby_rooms()}, broadcast=True)
 
 @socketio.on('request_game_state')
 def handle_req_state(data):

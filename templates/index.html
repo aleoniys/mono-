@@ -153,6 +153,18 @@
             cursor: not-allowed;
             transform: none;
         }
+        .leave-btn {
+            background: linear-gradient(180deg, #64748b 0%, #475569 100%) !important;
+            color: #fff !important;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+        .leave-btn:hover { transform: translateY(-2px); }
         .empty-msg { color: #9ca3af; font-size: 0.95rem; }
     </style>
 </head>
@@ -201,6 +213,7 @@
         }
 
         function joinRoom(roomName) { socket.emit('join_game_room', { room_name: roomName }); }
+        function leaveRoom(roomName) { socket.emit('leave_game_room', { room_name: roomName }); }
 
         socket.on('update_rooms', function(data) {
             const roomsContainer = document.getElementById('rooms-list');
@@ -227,7 +240,7 @@
                 let playersText = playersInRoom.length > 0 ? playersInRoom.join(', ') : 'Порожньо';
                 let buttonHtml = '';
                 if (amIInRoom) {
-                    buttonHtml = `<button class="join-btn" disabled style="background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%) !important;">Очікування гравців...</button>`;
+                    buttonHtml = `<button class="leave-btn" onclick="leaveRoom('${roomName}')">Покинути кімнату</button>`;
                 } else if (isFull) {
                     buttonHtml = `<button class="join-btn" disabled>Місць немає</button>`;
                 } else {
