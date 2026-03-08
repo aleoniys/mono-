@@ -1,9 +1,9 @@
 entrypoint = "app.py"
-run = "python app.py"
+run = "python3 app.py"
 
 [nix]
 channel = "stable-24_11"
 
 [deployment]
-run = ["python", "app.py"]
+run = ["python3", "app.py"]
 deploymentTarget = "cloudrun"
