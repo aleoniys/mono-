@@ -132,6 +132,26 @@
         .modal { background: #fff; padding: 28px; border-radius: 20px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; color: #1a1a1a; font-size: 14px; font-family: 'Outfit', sans-serif; box-shadow: 0 24px 60px rgba(0,0,0,0.25); border: 1px solid #e5e7eb; }
         .modal h2 { margin: 0 0 16px 0; text-align: center; color: #1a5f4a; font-size: 1.35rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px; }
         .trade-timer { text-align: center; margin: 0 0 12px 0; font-size: 0.95rem; color: #6b7280; }
+
+        .dice3d-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; display: flex; align-items: center; justify-content: center; flex-direction: column; perspective: 1400px; }
+        .dice3d-scene { display: flex; gap: 80px; align-items: center; justify-content: center; margin-bottom: 40px; }
+        .dice3d-cube { width: 80px; height: 80px; position: relative; transform-style: preserve-3d; transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1); transform: translateZ(0); }
+        .dice3d-face { position: absolute; width: 80px; height: 80px; background: #fff; backface-visibility: hidden; transform-style: preserve-3d; box-shadow: inset 0 0 6px rgba(0,0,0,0.2); border: 1px solid #e5e7eb; border-radius: 6px; }
+        .dice3d-face .dot { width: 12px; height: 12px; background: #1a1a1a; border-radius: 50%; position: absolute; }
+        .dice3d-face .c { top: 34px; left: 34px; }
+        .dice3d-face .tl { top: 12px; left: 12px; }
+        .dice3d-face .tr { top: 12px; right: 12px; }
+        .dice3d-face .bl { bottom: 12px; left: 12px; }
+        .dice3d-face .br { bottom: 12px; right: 12px; }
+        .dice3d-face .ml { top: 34px; left: 12px; }
+        .dice3d-face .mr { top: 34px; right: 12px; }
+        .dice3d-face.front { transform: rotateY(0deg) translateZ(40px); }
+        .dice3d-face.back { transform: rotateY(180deg) translateZ(40px); }
+        .dice3d-face.right { transform: rotateY(90deg) translateZ(40px); }
+        .dice3d-face.left { transform: rotateY(-90deg) translateZ(40px); }
+        .dice3d-face.top { transform: rotateX(90deg) translateZ(40px); }
+        .dice3d-face.bottom { transform: rotateX(-90deg) translateZ(40px); }
+        .dice3d-label { color: #e5e7eb; font-size: 1.1rem; margin: 0; font-weight: 600; }
         .trade-timer.warning { color: #dc2626; font-weight: 600; }
         .modal-buttons { display: flex; justify-content: center; gap: 16px; margin-top: 20px; flex-wrap: wrap; }
         .trade-section { display: flex; gap: 24px; margin-bottom: 20px; flex-wrap: wrap; }
@@ -180,6 +200,28 @@
                 </div>
             </div>
         </div>
+    </div>
+
+    <div id="dice3d-modal" class="dice3d-overlay" style="display:none;">
+        <div class="dice3d-scene">
+            <div class="dice3d-cube" id="dice3d-1">
+                <div class="dice3d-face front"><div class="dot c"></div></div>
+                <div class="dice3d-face back"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                <div class="dice3d-face right"><div class="dot tl"></div><div class="dot c"></div><div class="dot br"></div></div>
+                <div class="dice3d-face left"><div class="dot tl"></div><div class="dot tr"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                <div class="dice3d-face top"><div class="dot tl"></div><div class="dot tr"></div><div class="dot c"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                <div class="dice3d-face bottom"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
+            </div>
+            <div class="dice3d-cube" id="dice3d-2">
+                <div class="dice3d-face front"><div class="dot c"></div></div>
+                <div class="dice3d-face back"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                <div class="dice3d-face right"><div class="dot tl"></div><div class="dot c"></div><div class="dot br"></div></div>
+                <div class="dice3d-face left"><div class="dot tl"></div><div class="dot tr"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                <div class="dice3d-face top"><div class="dot tl"></div><div class="dot tr"></div><div class="dot c"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                <div class="dice3d-face bottom"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
+            </div>
+        </div>
+        <p class="dice3d-label" id="dice3d-label">Крутимо кубики...</p>
     </div>
 
     <div id="manage-modal" class="modal-overlay">
@@ -539,66 +581,42 @@
             const idAttr = id ? ` id="${id}"` : '';
             return `<div class="dice-face" data-value="${val}"${idAttr}>${pips}</div>`;
         }
+        const dice3dPos = {
+            1: 'rotateX(0deg) rotateY(0deg)',
+            2: 'rotateX(-90deg)',
+            3: 'rotateY(90deg)',
+            4: 'rotateY(-90deg)',
+            5: 'rotateX(90deg)',
+            6: 'rotateY(180deg)'
+        };
         socket.on('dice_rolled', function(data) {
             const diceResultDiv = document.getElementById('dice-result');
-            let ticks = 0;
-            const v1 = Math.floor(Math.random() * 6) + 1, v2 = Math.floor(Math.random() * 6) + 1;
-            diceResultDiv.innerHTML = `
-                <div class="dice-label">Крутимо кубики...</div>
-                <div class="dice-faces roll" id="dice-faces-spin">${diceHtml(v1, 'dice-1')}${diceHtml(v2, 'dice-2')}</div>
-            `;
-            const spinInterval = setInterval(() => {
-                ticks++;
-                const d1 = document.getElementById('dice-1');
-                const d2 = document.getElementById('dice-2');
-                if (d1) d1.setAttribute('data-value', (Math.floor(Math.random() * 6) + 1).toString());
-                if (d2) d2.setAttribute('data-value', (Math.floor(Math.random() * 6) + 1).toString());
-                if (ticks >= 15) {
-                    clearInterval(spinInterval);
-                    const face1 = document.getElementById('dice-1');
-                    const face2 = document.getElementById('dice-2');
-                    const faces = document.getElementById('dice-faces-spin');
-                    if (faces && face1 && face2) {
-                        face1.setAttribute('data-value', data.dice1);
-                        face2.setAttribute('data-value', data.dice2);
-                        face1.id = '';
-                        face2.id = '';
-                        faces.classList.remove('roll');
-                        faces.classList.add('dice-land');
-                        faces.id = '';
-                    }
-                    var labelEl = diceResultDiv.querySelector('.dice-label');
-                    if (labelEl) labelEl.textContent = data.player + ' кинув:';
-                    var totalEl = diceResultDiv.querySelector('.dice-total');
-                    if (!totalEl) {
-                        totalEl = document.createElement('div');
-                        totalEl.className = 'dice-total';
-                        faces.after(totalEl);
-                    }
-                    totalEl.textContent = 'Разом: ' + data.total;
-                    var doubleEl = diceResultDiv.querySelector('.dice-double-msg');
-                    if (!doubleEl) {
-                        doubleEl = document.createElement('div');
-                        doubleEl.className = 'dice-double-msg';
-                        totalEl.after(doubleEl);
-                    }
-                    doubleEl.textContent = (data.is_double && !data.jail_msg) ? '🎲 ДУБЛЬ! Додатковий хід!' : '';
-                    var jailEl = diceResultDiv.querySelector('.jail-warning');
-                    if (data.jail_msg) {
-                        if (!jailEl) {
-                            jailEl = document.createElement('div');
-                            jailEl.className = 'jail-warning';
-                            doubleEl.after(jailEl);
-                        }
-                        jailEl.textContent = data.jail_msg;
-                    } else if (jailEl) jailEl.remove();
-                    setTimeout(function() {
-                        var f = diceResultDiv.querySelector('.dice-faces');
-                        if (f) f.classList.remove('dice-land');
-                    }, 550);
-                }
-            }, 100);
-        });  // 15 × 100ms = 1.5 с: кубики крутяться 360° і значення змінюються пару разів
+            const modal = document.getElementById('dice3d-modal');
+            const d1 = document.getElementById('dice3d-1');
+            const d2 = document.getElementById('dice3d-2');
+            const labelEl = document.getElementById('dice3d-label');
+            modal.style.display = 'flex';
+            labelEl.textContent = data.player + ' кинув кубики...';
+            const spinX = Math.random() * 720 + 720;
+            const spinY = Math.random() * 720 + 720;
+            d1.style.transform = 'translateY(-180px) rotateX(' + spinX + 'deg) rotateY(' + spinY + 'deg)';
+            d2.style.transform = 'translateY(-180px) rotateX(' + spinY + 'deg) rotateY(' + spinX + 'deg)';
+            setTimeout(function() {
+                d1.style.transform = dice3dPos[data.dice1];
+                d2.style.transform = dice3dPos[data.dice2];
+                labelEl.textContent = 'Разом: ' + data.total;
+            }, 900);
+            setTimeout(function() {
+                modal.style.display = 'none';
+                diceResultDiv.innerHTML = `
+                    <div class="dice-label">${data.player} кинув:</div>
+                    <div class="dice-faces">${diceHtml(data.dice1)}${diceHtml(data.dice2)}</div>
+                    <div class="dice-total">Разом: ${data.total}</div>
+                    <div class="dice-double-msg">${(data.is_double && !data.jail_msg) ? '🎲 ДУБЛЬ! Додатковий хід!' : ''}</div>
+                    ${data.jail_msg ? '<div class="jail-warning">' + data.jail_msg + '</div>' : ''}
+                `;
+            }, 2500);
+        });
 
         // УПРАВЛІННЯ ВЛАСНІСТЮ
         function onCellClick(pos) {
