@@ -19,13 +19,13 @@
         .player-badge span { display: block; font-size: 0.85em; color: #6b7b6e; margin-top: 4px; font-weight: 500; }
         .jail-icon { color: #c41e3a; font-size: 1.1em; margin-left: 4px; }
 
-        .board { display: grid; grid-template-columns: repeat(11, 1fr); grid-template-rows: repeat(11, 1fr); gap: 1px; background: #374151; padding: 6px; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4); width: 100%; max-width: 92vh; aspect-ratio: 1 / 1; }
+        .board { display: grid; grid-template-columns: repeat(11, 1fr); grid-template-rows: repeat(11, 1fr); gap: 1px; background: #374151; padding: 6px; border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4); width: 100%; max-width: 115vh; aspect-ratio: 1 / 1; position: relative; }
 
         .cell { background: #fff; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; overflow: hidden; cursor: pointer; transition: filter 0.2s; border-radius: 5px; }
         .cell:hover { filter: brightness(0.96); }
         .mortgaged { filter: grayscale(100%) opacity(0.7); }
         .corner { justify-content: center; cursor: default; font-weight: 700; border-radius: 6px; }
-        .corner .cell-icon { font-size: clamp(20px, 3.5vmin, 32px); line-height: 1; margin-bottom: 2px; }
+        .corner .cell-icon { font-size: clamp(25px, 4.4vmin, 40px); line-height: 1; margin-bottom: 2px; }
         .corner:hover { filter: none; }
         .corner.corner-go { background: #059669; color: #fff; }
         .corner.corner-jail { background: #4b5563; color: #e5e7eb; }
@@ -33,14 +33,14 @@
         .corner.corner-police { background: #dc2626; color: #fff; }
         .chance-cell { background: #fef3c7; color: #92400e; font-weight: 600; justify-content: center; cursor: default; border-radius: 6px; }
         .chance-cell.car-cell { background: linear-gradient(145deg, #dbeafe 0%, #bfdbfe 100%); color: #1e40af; }
-        .chance-cell .cell-icon { font-size: clamp(18px, 2.8vmin, 28px); margin-bottom: 2px; }
+        .chance-cell .cell-icon { font-size: clamp(22px, 3.5vmin, 35px); margin-bottom: 2px; }
         .chance-cell:hover { filter: none; }
-        .color-bar { width: 100%; height: 24%; border-bottom: none; flex-shrink: 0; display: flex; justify-content: center; align-items: center; gap: 2px; font-size: clamp(6px, 1.1vmin, 12px); color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.3); font-weight: 600; }
-        .color-bar .cell-icon { font-size: clamp(9px, 1.6vmin, 16px); }
-        .cell-content { padding: 3px 5px; word-wrap: break-word; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; align-items: center; width: 100%; font-size: clamp(6px, 1.3vmin, 12px); color: #374151; }
-        .cell-content .cell-icon { font-size: clamp(9px, 1.4vmin, 14px); margin-right: 1px; }
+        .color-bar { width: 100%; height: 24%; border-bottom: none; flex-shrink: 0; display: flex; justify-content: center; align-items: center; gap: 2px; font-size: clamp(8px, 1.4vmin, 15px); color: #fff; text-shadow: 0 1px 1px rgba(0,0,0,0.3); font-weight: 600; }
+        .color-bar .cell-icon { font-size: clamp(11px, 2vmin, 20px); }
+        .cell-content { padding: 4px 6px; word-wrap: break-word; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; align-items: center; width: 100%; font-size: clamp(8px, 1.6vmin, 15px); color: #374151; }
+        .cell-content .cell-icon { font-size: clamp(11px, 1.8vmin, 18px); margin-right: 1px; }
         .tokens-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; padding-bottom: 2px; width: 100%; }
-        .token { width: clamp(8px, 1.8vmin, 18px); height: clamp(8px, 1.8vmin, 18px); border-radius: 50%; border: 1px solid #fff; box-shadow: 0 0 3px #000; z-index: 10; }
+        .token { width: clamp(10px, 2.2vmin, 22px); height: clamp(10px, 2.2vmin, 22px); border-radius: 50%; border: 1px solid #fff; box-shadow: 0 0 3px #000; z-index: 10; }
         @keyframes hop { 0% { transform: translateY(0); } 50% { transform: translateY(-50%) scale(1.1); } 100% { transform: translateY(0); } }
         .hopping { animation: hop 0.25s linear; }
 
@@ -97,13 +97,6 @@
         .dice-face[data-value="4"] .pip:nth-child(1), .dice-face[data-value="4"] .pip:nth-child(3), .dice-face[data-value="4"] .pip:nth-child(7), .dice-face[data-value="4"] .pip:nth-child(9) { opacity: 1; }
         .dice-face[data-value="5"] .pip:nth-child(1), .dice-face[data-value="5"] .pip:nth-child(3), .dice-face[data-value="5"] .pip:nth-child(5), .dice-face[data-value="5"] .pip:nth-child(7), .dice-face[data-value="5"] .pip:nth-child(9) { opacity: 1; }
         .dice-face[data-value="6"] .pip:nth-child(1), .dice-face[data-value="6"] .pip:nth-child(2), .dice-face[data-value="6"] .pip:nth-child(3), .dice-face[data-value="6"] .pip:nth-child(7), .dice-face[data-value="6"] .pip:nth-child(8), .dice-face[data-value="6"] .pip:nth-child(9) { opacity: 1; }
-        .dice-result-wrap { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; overflow: hidden; }
-        .dice-result-wrap #dice-result { font-size: clamp(11px, 1.3vw, 14px); color: #374151; margin: 0; line-height: 1.3; text-align: center; }
-        .dice-label { font-size: clamp(10px, 1.2vw, 14px); color: #6b7b6e; margin: 0 0 2px 0; flex-shrink: 0; }
-        .dice-total { font-size: clamp(13px, 1.6vw, 17px); color: #1a1a1a; font-weight: 700; margin: 4px 0 0 0; height: 1.35em; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-        .dice-double-msg { font-size: clamp(11px, 1.2vw, 13px); color: #16a34a; font-weight: 700; margin: 2px 0 0 0; height: 2.2em; line-height: 1.2; flex-shrink: 0; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 4px; }
-        .jail-warning { font-size: clamp(10px, 1.5vmin, 13px); color: #b91c1c; font-weight: 600; margin: 2px 0 0 0; height: 1.3em; flex-shrink: 0; }
-
         .chat-container { display: flex; flex-direction: column; flex: 0.85 1 0; overflow: hidden; min-height: 0; }
         .chat-messages { flex-grow: 1; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #fff; position: relative; min-height: 0; }
         .chat-message { background: #f8faf9; border: 1px solid #e5e7eb; padding: clamp(6px, 1vw, 10px); border-radius: 12px; align-self: flex-start; max-width: 95%; }
@@ -135,7 +128,7 @@
         .modal h2 { margin: 0 0 16px 0; text-align: center; color: #1a5f4a; font-size: 1.35rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px; }
         .trade-timer { text-align: center; margin: 0 0 12px 0; font-size: 0.95rem; color: #6b7280; }
 
-        .dice3d-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.88); z-index: 2000; display: flex; align-items: center; justify-content: center; flex-direction: column; perspective: 1400px; }
+        .dice3d-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.88); z-index: 2000; display: flex; align-items: center; justify-content: center; flex-direction: column; perspective: 1400px; border-radius: 12px; }
         .dice3d-scene { display: flex; gap: 80px; align-items: center; justify-content: center; margin-bottom: 40px; }
         .dice3d-cube { width: 80px; height: 80px; position: relative; transform-style: preserve-3d; transition: transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94); transform: translateZ(0); }
         .dice3d-face { position: absolute; width: 80px; height: 80px; background: #fff; backface-visibility: hidden; transform-style: preserve-3d; box-shadow: inset 0 0 6px rgba(0,0,0,0.2); border: 1px solid #e5e7eb; border-radius: 0; }
@@ -178,7 +171,6 @@
             <div class="timer-bar-container"><div class="timer-bar" id="timer-bar"></div></div>
             
             <div class="dice-area">
-                <div class="dice-result-wrap"><div id="dice-result">Гра готова до початку!</div></div>
                 <button id="btn-roll" class="btn btn-roll" onclick="rollDice()" disabled>🎲 Кинути</button>
             </div>
             <div class="action-buttons-wrap">
@@ -197,33 +189,33 @@
 
             <div class="chat-container">
                 <div class="chat-messages" id="chat-messages">
-                    <div id="dice3d-modal" class="dice3d-overlay" style="display:none;">
-                        <div class="dice3d-scene">
-                            <div class="dice3d-cube" id="dice3d-1">
-                                <div class="dice3d-face front"><div class="dot c"></div></div>
-                                <div class="dice3d-face back"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
-                                <div class="dice3d-face right"><div class="dot tl"></div><div class="dot c"></div><div class="dot br"></div></div>
-                                <div class="dice3d-face left"><div class="dot tl"></div><div class="dot tr"></div><div class="dot bl"></div><div class="dot br"></div></div>
-                                <div class="dice3d-face top"><div class="dot tl"></div><div class="dot tr"></div><div class="dot c"></div><div class="dot bl"></div><div class="dot br"></div></div>
-                                <div class="dice3d-face bottom"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
-                            </div>
-                            <div class="dice3d-cube" id="dice3d-2">
-                                <div class="dice3d-face front"><div class="dot c"></div></div>
-                                <div class="dice3d-face back"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
-                                <div class="dice3d-face right"><div class="dot tl"></div><div class="dot c"></div><div class="dot br"></div></div>
-                                <div class="dice3d-face left"><div class="dot tl"></div><div class="dot tr"></div><div class="dot bl"></div><div class="dot br"></div></div>
-                                <div class="dice3d-face top"><div class="dot tl"></div><div class="dot tr"></div><div class="dot c"></div><div class="dot bl"></div><div class="dot br"></div></div>
-                                <div class="dice3d-face bottom"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
-                            </div>
-                        </div>
-                        <p class="dice3d-label" id="dice3d-label">Крутимо кубики...</p>
-                    </div>
                 </div>
                 <div class="chat-input-area">
                     <input type="text" id="chat-input" placeholder="Повідомлення..." onkeypress="handleKeyPress(event)">
                     <button onclick="sendMessage()">Надіслати</button>
                 </div>
             </div>
+        <div id="dice3d-modal" class="dice3d-overlay" style="display:none;">
+            <div class="dice3d-scene">
+                <div class="dice3d-cube" id="dice3d-1">
+                    <div class="dice3d-face front"><div class="dot c"></div></div>
+                    <div class="dice3d-face back"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                    <div class="dice3d-face right"><div class="dot tl"></div><div class="dot c"></div><div class="dot br"></div></div>
+                    <div class="dice3d-face left"><div class="dot tl"></div><div class="dot tr"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                    <div class="dice3d-face top"><div class="dot tl"></div><div class="dot tr"></div><div class="dot c"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                    <div class="dice3d-face bottom"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                </div>
+                <div class="dice3d-cube" id="dice3d-2">
+                    <div class="dice3d-face front"><div class="dot c"></div></div>
+                    <div class="dice3d-face back"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                    <div class="dice3d-face right"><div class="dot tl"></div><div class="dot c"></div><div class="dot br"></div></div>
+                    <div class="dice3d-face left"><div class="dot tl"></div><div class="dot tr"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                    <div class="dice3d-face top"><div class="dot tl"></div><div class="dot tr"></div><div class="dot c"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                    <div class="dice3d-face bottom"><div class="dot tl"></div><div class="dot tr"></div><div class="dot ml"></div><div class="dot mr"></div><div class="dot bl"></div><div class="dot br"></div></div>
+                </div>
+            </div>
+            <p class="dice3d-label" id="dice3d-label">Крутимо кубики...</p>
+        </div>
     </div>
 
     <div id="manage-modal" class="modal-overlay">
@@ -335,8 +327,8 @@
                     cell.innerHTML = `
                         <div class="color-bar" id="colorbar-${i}" style="background-color: ${groupColors[i]}"><span class="cell-icon">${icon}</span></div>
                         <div class="cell-content">
-                            <div><span class="cell-icon" style="font-size: 0.9em;">${icon}</span> ${companyNames[i]}</div>
-                            <div style="font-size: 0.8em; color: #6b7280;" id="rent-info-${i}">Оренда: <span id="rent-${i}">${rentPrices[i]}</span></div>
+                            <div>${companyNames[i]}</div>
+                            <div style="font-size: 0.85em; color: #6b7280;" id="rent-info-${i}">Вартість: <span id="rent-${i}">1000</span></div>
                             <div style="font-size: 0.8em; color: #dc2626; font-weight: bold; display:none;" id="mortgage-info-${i}">🔒 ЗАКЛАДЕНО</div>
                             <div class="tokens-container" id="tokens-${i}"></div>
                         </div>
@@ -436,7 +428,7 @@
                 cellsMap[i].classList.remove('mortgaged');
                 if(groupColors[i]) {
                     document.getElementById(`colorbar-${i}`).innerHTML = '<span class="cell-icon">' + (propertyIcons[i] || '🏠') + '</span>';
-                    document.getElementById(`rent-${i}`).innerText = rentPrices[i];
+                    document.getElementById(`rent-info-${i}`).innerHTML = 'Вартість: <span id="rent-' + i + '">1000</span>';
                     document.getElementById(`rent-info-${i}`).style.display = 'block';
                     document.getElementById(`mortgage-info-${i}`).style.display = 'none';
                 }
@@ -457,8 +449,9 @@
                     const upgrades = state.upgrades[cellStr] || 0;
                     if (upgrades > 0) {
                         document.getElementById(`colorbar-${cellIndex}`).innerHTML = '<span class="cell-icon">' + (propertyIcons[cellIndex] || '🏠') + '</span>' + '⭐'.repeat(upgrades);
-                        document.getElementById(`rent-${cellIndex}`).innerText = rentPrices[cellIndex] * (1 + upgrades * 2);
                     }
+                    document.getElementById(`rent-info-${cellIndex}`).innerHTML = 'Оренда: <span id="rent-' + cellIndex + '">' + (rentPrices[cellIndex] * (1 + upgrades * 2)) + '</span>';
+                    document.getElementById(`rent-info-${cellIndex}`).style.display = 'block';
                 }
             }
 
@@ -515,9 +508,8 @@
             // --- ЛОГІКА КНОПОК ДЛЯ БАНКРУТА ---
             const bankruptBlock = document.getElementById('bankrupt-exit-block');
             if (amIBankrupt) {
-                document.getElementById('turn-indicator').innerText = `💀 Ви збанкрутували!`;
+                document.getElementById('turn-indicator').innerText = `💀 Ви збанкрутували! Можете спостерігати або вийти в лоббі.`;
                 document.getElementById('turn-indicator').style.backgroundColor = `#e74c3c`;
-                document.getElementById('dice-result').innerText = `Ви можете спостерігати за грою або вийти в лоббі.`;
                 if (bankruptBlock) bankruptBlock.style.display = 'block';
                 btnExit.style.display = 'block';
                 return; // Блокуємо всі інші ігрові кнопки
@@ -530,13 +522,8 @@
             if (state.debt && state.debt.player === myUsername) {
                 btnPayDebt.style.display = 'block';
                 btnPayDebt.innerText = `Сплатити борг (${state.debt.amount})`;
-                if (state.players_data[myUsername].balance < state.debt.amount) {
-                    btnPayDebt.disabled = true;
-                    document.getElementById('dice-result').innerHTML = `<span style="color:#e74c3c; font-weight:bold;">Продайте покращення або закладіть майно!</span>`;
-                } else {
-                    btnPayDebt.disabled = false;
-                    document.getElementById('dice-result').innerHTML = `У вас є гроші, сплатіть борг.`;
-                }
+                btnPayDebt.disabled = state.players_data[myUsername].balance < state.debt.amount;
+                document.getElementById('turn-indicator').innerText = state.players_data[myUsername].balance >= state.debt.amount ? `Сплатіть борг: ${state.debt.amount}` : `Хід гравця: ${currentTurnPlayer} — продайте покращення або закладіть майно!`;
                 return; 
             }
 
@@ -548,7 +535,6 @@
                 if (state.pending_trade_from === myUsername) {
                     btnRoll.disabled = true;
                     btnRoll.innerText = 'Очікування відповіді на обмін...';
-                    document.getElementById('dice-result').innerText = 'Ви запропонували обмін. Очікуйте відповіді.';
                 } else if (isMyTurn && !state.debt) {
                     btnRoll.disabled = false;
                     btnRoll.innerText = state.players_data[myUsername].jail_turns > 0 ? '🎲 Кинути (Спроба дубля)' : '🎲 Кинути кубики';
@@ -591,8 +577,16 @@
             5: 'rotateX(90deg)',
             6: 'rotateY(180deg)'
         };
+        function addSystemMessage(text) {
+            const m = document.getElementById('chat-messages');
+            const d = document.createElement('div');
+            d.className = 'chat-message';
+            d.style.backgroundColor = '#fff3cd';
+            d.innerHTML = '<div class="message-sender">СИСТЕМА</div><div class="message-text">' + text + '</div>';
+            m.appendChild(d);
+            m.scrollTop = m.scrollHeight;
+        }
         socket.on('dice_rolled', function(data) {
-            const diceResultDiv = document.getElementById('dice-result');
             const modal = document.getElementById('dice3d-modal');
             const d1 = document.getElementById('dice3d-1');
             const d2 = document.getElementById('dice3d-2');
@@ -610,12 +604,10 @@
             }, 280);
             setTimeout(function() {
                 modal.style.display = 'none';
-                diceResultDiv.innerHTML = `
-                    <div class="dice-label">${data.player} кинув:</div>
-                    <div class="dice-total">Разом: ${data.total}</div>
-                    <div class="dice-double-msg">${(data.is_double && !data.jail_msg) ? '🎲 ДУБЛЬ! Додатковий хід!' : ''}</div>
-                    ${data.jail_msg ? '<div class="jail-warning">' + data.jail_msg + '</div>' : ''}
-                `;
+                let msg = data.player + ' кинув: ' + data.dice1 + ' + ' + data.dice2 + ' = ' + data.total;
+                if (data.is_double && !data.jail_msg) msg += ' 🎲 Дубль!';
+                if (data.jail_msg) msg += ' ' + data.jail_msg;
+                addSystemMessage(msg);
             }, 1000);
         });
 
