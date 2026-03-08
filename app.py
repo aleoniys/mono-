@@ -101,7 +101,12 @@ def game(room_name):
 active_rooms = {}
 
 # Дані клітинок — з Python-модуля (працює на Replit без читання файлів)
-from board_cells_data import BOARD_DATA
+try:
+    from board_cells_data import BOARD_DATA
+except Exception as e:
+    import sys
+    print(f'[WARN] board_cells_data import failed: {e}', file=sys.stderr)
+    BOARD_DATA = {'cells': [], 'upgrade_cost_per_star': 500, 'sell_star_value': 500}
 
 BOARD_BY_ID = {c['id']: c for c in BOARD_DATA.get('cells', [])}
 
@@ -611,5 +616,7 @@ def handle_trade_response(data):
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    # eventlet потрібен для SocketIO на Replit/Cloud Run
-    socketio.run(app, host='0.0.0.0', port=port, debug=True, allow_unsafe_werkzeug=True)
+    # debug=False щоб на Replit не запускався reloader (інакше порт не слухається)
+    import sys
+    print(f'Starting server on 0.0.0.0:{port}', file=sys.stderr)
+    socketio.run(app, host='0.0.0.0', port=port, debug=False, allow_unsafe_werkzeug=True)
