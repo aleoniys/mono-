@@ -95,27 +95,43 @@ def index():
 def game(room_name):
     if room_name not in active_rooms or current_user.username not in active_rooms[room_name]['players']:
         return redirect(url_for('index'))
-    return render_template('game.html', room_name=room_name, username=current_user.username)
+    return render_template('game.html', room_name=room_name, username=current_user.username, board_cells=BOARD_DATA)
 
 # --- WEBSOCKETS ТА ЛОГІКА ГРИ ---
 active_rooms = {}
 
-def get_lobby_rooms():
-    """Кімнати, які ще не почали гру — показуємо тільки їх у лобі."""
-    return {k: v for k, v in active_rooms.items() if not v.get('started', False)}
-PURCHASABLE_CELLS = [1,2,3, 6,7,8, 11,12,13, 16,17,18, 21,22,23, 26,27,28, 31,32,33, 36,37,38]
-CAR_CELLS = [4, 14, 24, 34]
-CAR_PRICE = 500
+# Завантаження даних клітинок з board_cells.json — єдине джерело правди для цін, оренди, залогу тощо.
+_BOARD_JSON_PATH = os.path.join(os.path.dirname(__file__), 'board_cells.json')
+with open(_BOARD_JSON_PATH, 'r', encoding='utf-8') as _f:
+    BOARD_DATA = json.load(_f)
+BOARD_BY_ID = {c['id']: c for c in BOARD_DATA['cells']}
+
+def _get_cell(pos, key, default=None):
+    c = BOARD_BY_ID.get(pos)
+    return (c.get(key) if c else None) or default
+
+PURCHASABLE_CELLS = [c['id'] for c in BOARD_DATA['cells'] if c.get('price') is not None]
+CAR_CELLS = [c['id'] for c in BOARD_DATA['cells'] if c.get('type') == 'car']
+RENT_BY_STARS = {
+    c['id']: [c['rent_0'], c['rent_1'], c['rent_2'], c['rent_3']]
+    for c in BOARD_DATA['cells']
+    if c.get('type') == 'company' and all(c.get('rent_' + str(i)) is not None for i in range(4))
+}
+
 def car_rent(n_cars):
-    """Оренда за автомобілі: 1=200, 2=400, 3=600, 4=1000."""
-    return 200 * n_cars
+    """Оренда за автомобілі: беруться з board_cells (rent_0..rent_3 = 1..4 авто)."""
+    if n_cars < 1 or not CAR_CELLS:
+        return 0
+    cell = BOARD_BY_ID.get(CAR_CELLS[0])
+    if not cell:
+        return 0
+    r = cell.get('rent_' + str(min(n_cars, 4) - 1))
+    return r if r is not None else 0
+
 CHANCE_CELLS = [5, 9, 15, 19, 25, 29, 35, 39]
 COLOR_GROUPS = [[1,2,3], [6,7,8], [11,12,13], [16,17,18], [21,22,23], [26,27,28], [31,32,33], [36,37,38]]
-RENT_PRICES = {
-    1: 50, 2: 50, 3: 50, 6: 100, 7: 100, 8: 100, 11: 150, 12: 150, 13: 150,
-    16: 200, 17: 200, 18: 200, 21: 250, 22: 250, 23: 250, 26: 300, 27: 300, 28: 300,
-    31: 400, 32: 400, 33: 400, 36: 500, 37: 500, 38: 500
-}
+UPGRADE_COST_DEFAULT = BOARD_DATA.get('upgrade_cost_per_star', 500)
+SELL_STAR_DEFAULT = BOARD_DATA.get('sell_star_value', 500)
 
 def pass_turn(state, room):
     if state.get('extra_turn', False):
@@ -376,7 +392,7 @@ def handle_roll_dice(data):
                         rent = car_rent(n_cars)
                     else:
                         upgrades = state['upgrades'].get(str(pos), 0)
-                        rent = RENT_PRICES[pos] * (1 + upgrades * 2)
+                        rent = RENT_BY_STARS[pos][min(upgrades, 3)]
                     if player_data['balance'] >= rent:
                         player_data['balance'] -= rent
                         state['players_data'][owner]['balance'] += rent
@@ -464,8 +480,8 @@ def handle_buy_property(data):
     if state.get('pending_trade_from') == player: return
     if state['waiting_for_buy']:
         buy_pos = state['players_data'][player]['pos']
-        price = CAR_PRICE if buy_pos in CAR_CELLS else 1000
-        if state['players_data'][player]['balance'] < price:
+        price = _get_cell(buy_pos, 'price', 1000)
+        if price is None or state['players_data'][player]['balance'] < price:
             return
         state['players_data'][player]['balance'] -= price
         state['properties'][buy_pos] = player
@@ -502,37 +518,37 @@ def handle_manage_property(data):
     is_car_cell = pos in CAR_CELLS
     upgrades = 0 if is_car_cell else state['upgrades'].get(str(pos), 0)
     is_mortgaged = str(pos) in state.get('mortgages', {})
-    car_mortgage_val = 250
-    car_unmortgage_val = 500
+    mortgage_val = _get_cell(pos, 'mortgage', 500)
+    unmortgage_val = _get_cell(pos, 'unmortgage', 1000)
+    upgrade_cost = _get_cell(pos, 'upgrade_cost') or UPGRADE_COST_DEFAULT
+    sell_star_val = _get_cell(pos, 'sell_star') or SELL_STAR_DEFAULT
 
     if action == 'upgrade' and not is_car_cell and not state.get('has_upgraded_this_turn', False):
         group = next((g for g in COLOR_GROUPS if pos in g), None)
         owns_all = all(state['properties'].get(p) == player for p in group)
         min_other = min(state['upgrades'].get(str(p), 0) for p in group if p != pos) if group else 0
         can_upgrade_evenly = (min_other >= upgrades)
-        if owns_all and not is_mortgaged and upgrades < 3 and p_data['balance'] >= 500 and can_upgrade_evenly:
-            p_data['balance'] -= 500
+        if owns_all and not is_mortgaged and upgrades < 3 and p_data['balance'] >= upgrade_cost and can_upgrade_evenly:
+            p_data['balance'] -= upgrade_cost
             state['upgrades'][str(pos)] = upgrades + 1
             state['has_upgraded_this_turn'] = True
             emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} покращує клітинку {pos}!'}, to=room_name)
 
     elif action == 'sell_upgrade' and not is_car_cell:
         if upgrades > 0:
-            p_data['balance'] += 500
+            p_data['balance'] += sell_star_val
             state['upgrades'][str(pos)] = upgrades - 1
-            emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} продає 1 покращення з клітинки {pos} за 500 балів.'}, to=room_name)
+            emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} продає 1 покращення з клітинки {pos} за {sell_star_val} балів.'}, to=room_name)
 
     elif action == 'mortgage':
-        if upgrades == 0 and not is_mortgaged:
-            amount = car_mortgage_val if is_car_cell else 500
-            p_data['balance'] += amount
+        if upgrades == 0 and not is_mortgaged and mortgage_val is not None:
+            p_data['balance'] += mortgage_val
             state['mortgages'][str(pos)] = 10
             emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} закладає клітинку {pos}. У нього є 10 ходів на викуп!'}, to=room_name)
 
     elif action == 'unmortgage':
-        need = car_unmortgage_val if is_car_cell else 1000
-        if is_mortgaged and p_data['balance'] >= need:
-            p_data['balance'] -= need
+        if is_mortgaged and unmortgage_val is not None and p_data['balance'] >= unmortgage_val:
+            p_data['balance'] -= unmortgage_val
             del state['mortgages'][str(pos)]
             emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} викупає клітинку {pos} із застави!'}, to=room_name)
 

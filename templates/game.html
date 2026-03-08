@@ -320,30 +320,42 @@
         const currentRoom = "{{ room_name }}"; 
         const myUsername = "{{ username }}";
 
+        // Усі дані клітинок з board_cells.json (єдине джерело правди)
+        const boardCellsData = {{ board_cells | tojson }};
+        const boardCells = boardCellsData.cells || [];
+        const boardById = {};
+        boardCells.forEach(function(c) { boardById[c.id] = c; });
+
+        const companyNames = {};
+        boardCells.forEach(function(c) { companyNames[c.id] = c.name; });
+
+        const rentByStars = {};
+        boardCells.forEach(function(c) {
+            if (c.type === 'company' && c.rent_0 != null && c.rent_1 != null && c.rent_2 != null && c.rent_3 != null)
+                rentByStars[c.id] = [c.rent_0, c.rent_1, c.rent_2, c.rent_3];
+        });
+
+        const carCellsList = boardCells.filter(function(c) { return c.type === 'car'; }).map(function(c) { return c.id; });
+        const firstCarCell = carCellsList.length ? boardById[carCellsList[0]] : null;
+        const carPrice = firstCarCell && firstCarCell.price != null ? firstCarCell.price : 500;
+        const carRentByCount = firstCarCell ? { 1: firstCarCell.rent_0, 2: firstCarCell.rent_1, 3: firstCarCell.rent_2, 4: firstCarCell.rent_3 } : { 1: 200, 2: 400, 3: 600, 4: 1000 };
+
+        function getCellPrice(id) { const c = boardById[id]; return (c && c.price != null) ? c.price : 1000; }
+        function getUpgradeCost(id) { const c = boardById[id]; return (c && c.upgrade_cost != null) ? c.upgrade_cost : (boardCellsData.upgrade_cost_per_star != null ? boardCellsData.upgrade_cost_per_star : 500); }
+        function getMortgage(id) { const c = boardById[id]; return (c && c.mortgage != null) ? c.mortgage : 500; }
+        function getUnmortgage(id) { const c = boardById[id]; return (c && c.unmortgage != null) ? c.unmortgage : 1000; }
+        function getSellStar(id) { const c = boardById[id]; return (c && c.sell_star != null) ? c.sell_star : (boardCellsData.sell_star_value != null ? boardCellsData.sell_star_value : 500); }
+
         const groupColors = {
             1:'#8e44ad', 2:'#8e44ad', 3:'#8e44ad', 4:'#64748b', 6:'#3498db', 7:'#3498db', 8:'#3498db', 
             11:'#e84393', 12:'#e84393', 13:'#e84393', 14:'#64748b', 16:'#e67e22', 17:'#e67e22', 18:'#e67e22', 
             21:'#c0392b', 22:'#c0392b', 23:'#c0392b', 24:'#64748b', 26:'#f1c40f', 27:'#f1c40f', 28:'#f1c40f', 
             31:'#27ae60', 32:'#27ae60', 33:'#27ae60', 34:'#64748b', 36:'#2980b9', 37:'#2980b9', 38:'#2980b9'  
         };
-        const carCellsList = [4, 14, 24, 34];
-        const carPrice = 500;
-        const carRentByCount = { 1: 200, 2: 400, 3: 600, 4: 1000 };
         const colorGroupsList = [
             [1,2,3], [6,7,8], [11,12,13], [16,17,18],
             [21,22,23], [26,27,28], [31,32,33], [36,37,38]
         ];
-        const rentPrices = {
-            1: 50, 2: 50, 3: 50, 6: 100, 7: 100, 8: 100, 11: 150, 12: 150, 13: 150,
-            16: 200, 17: 200, 18: 200, 21: 250, 22: 250, 23: 250, 26: 300, 27: 300, 28: 300,
-            31: 400, 32: 400, 33: 400, 36: 500, 37: 500, 38: 500
-        };
-        const companyNames = {
-            1: "Кіоск", 2: "Кав'ярня", 3: "Пекарня", 4: "Mercedes", 6: "Автомийка", 7: "Шиномонтаж", 8: "СТО",
-            11: "Перукарня", 12: "Салон краси", 13: "Барбершоп", 14: "BMW", 16: "Піцерія", 17: "Суші-бар", 18: "Ресторан",
-            21: "Кінотеатр", 22: "Боулінг", 23: "Аквапарк", 24: "Toyota", 26: "Аптека", 27: "Приватна клініка", 28: "Стоматологія",
-            31: "Провайдер", 32: "IT", 33: "ШІ-Стартап", 34: "Audi", 36: "ТЦ", 37: "Готель", 38: "Банк"
-        };
         const propertyIcons = {
             1: "🏪", 2: "☕", 3: "🍞", 4: "🚗", 6: "🚗", 7: "🔧", 8: "⚙️", 11: "💇", 12: "💄", 13: "💈", 14: "🚗",
             16: "🍕", 17: "🍣", 18: "🍽️", 21: "🎬", 22: "🎳", 23: "🌊", 24: "🚗", 26: "💊", 27: "🏥", 28: "🦷",
@@ -368,7 +380,7 @@
 
                 if (groupColors[i]) {
                     const icon = propertyIcons[i] || "🏠";
-                    const initPrice = carCellsList.includes(i) ? carPrice : 1000;
+                    const initPrice = getCellPrice(i);
                     cell.innerHTML = `
                         <div class="color-bar" id="colorbar-${i}" style="background-color: ${groupColors[i]}"><span id="rent-${i}">${initPrice}</span></div>
                         <div class="cell-content">
@@ -383,8 +395,9 @@
                     else if (i === 10) cell.classList.add('corner-jail');
                     else if (i === 20) cell.classList.add('corner-parking');
                     else cell.classList.add('corner-police');
-                    const cornerData = { 0: ["🏁", "СТАРТ"], 10: ["⛓️", "ТЮРМА"], 20: ["🅿️", "ПАРКОВКА"], 30: ["🚔", "ПОЛІЦІЯ"] };
-                    const [ico, txt] = cornerData[i];
+                    const cornerIcons = { 0: "🏁", 10: "⛓️", 20: "🅿️", 30: "🚔" };
+                    const ico = cornerIcons[i] || "⬜";
+                    const txt = companyNames[i] || (i === 0 ? "СТАРТ" : i === 10 ? "ТЮРМА" : i === 20 ? "ПАРКОВКА" : "ПОЛІЦІЯ");
                     cell.innerHTML = `<div class="cell-content" style="justify-content: center;"><div class="cell-icon">${ico}</div><div>${txt}</div></div><div class="tokens-container" id="tokens-${i}"></div>`;
                 } else {
                     cell.classList.add('chance-cell');
@@ -469,7 +482,7 @@
                 cellsMap[i].style.backgroundColor = '';
                 cellsMap[i].classList.remove('mortgaged');
                 if(groupColors[i]) {
-                    const defVal = carCellsList.includes(i) ? carPrice : 1000;
+                    const defVal = getCellPrice(i);
                     document.getElementById(`colorbar-${i}`).innerHTML = '<span id="rent-' + i + '">' + defVal + '</span>';
                     const mInfo = document.getElementById('mortgage-info-' + i);
                     if (mInfo) mInfo.style.display = 'none';
@@ -494,7 +507,8 @@
                         document.getElementById(`colorbar-${cellIndex}`).innerHTML = '<span id="rent-' + cellIndex + '">' + rentVal + '</span>';
                     } else {
                         const upgrades = state.upgrades[cellStr] || 0;
-                        rentVal = rentPrices[cellIndex] * (1 + upgrades * 2);
+                        const stars = Math.min(upgrades, 3);
+                        rentVal = rentByStars[cellIndex] ? rentByStars[cellIndex][stars] : 0;
                         document.getElementById(`colorbar-${cellIndex}`).innerHTML = '<span id="rent-' + cellIndex + '">' + rentVal + '</span>' + (upgrades > 0 ? '<span class="color-bar-stars">' + '⭐'.repeat(upgrades) + '</span>' : '');
                     }
                     const mInfo = document.getElementById(`mortgage-info-${cellIndex}`);
@@ -579,7 +593,7 @@
                     btnBuy.style.display = 'block';
                     btnSkip.style.display = 'block';
                     const myPos = state.players_data[myUsername].pos;
-                    btnBuy.innerText = carCellsList.includes(myPos) ? 'Купити (500)' : 'Купити (1000)';
+                    btnBuy.innerText = 'Купити (' + getCellPrice(myPos) + ')';
                 } else { btnRoll.style.display = 'block'; btnRoll.disabled = true; btnRoll.innerText = 'Очікування рішення...'; }
             } else {
                 btnRoll.style.display = 'block';
@@ -597,8 +611,10 @@
                             const ownsAll = myGroup.every(p => state.properties[p] === myUsername);
                             const currentLevel = state.upgrades[myPos] || 0;
                             const minOtherInGroup = Math.min(...myGroup.filter(p => p !== myPos).map(p => state.upgrades[p] || 0));
-                            if (ownsAll && currentLevel < 3 && minOtherInGroup >= currentLevel && state.players_data[myUsername].balance >= 500) {
+                            const upgradeCost = getUpgradeCost(myPos);
+                            if (ownsAll && currentLevel < 3 && minOtherInGroup >= currentLevel && state.players_data[myUsername].balance >= upgradeCost) {
                                 btnUpgrade.style.display = 'block';
+                                btnUpgrade.innerText = '⭐ Покращити (' + upgradeCost + ')';
                             }
                         }
                     }
@@ -684,20 +700,24 @@
             const btnContainer = document.getElementById('manage-buttons');
             btnContainer.innerHTML = '';
 
+            const mortgageVal = getMortgage(pos);
+            const unmortgageVal = getUnmortgage(pos);
+            const upgradeCostVal = getUpgradeCost(pos);
+            const sellStarVal = getSellStar(pos);
             if (isCar) {
-                if (!isMortgaged) btnContainer.innerHTML += `<button class="manage-prop-btn btn-mortgage" onclick="manageProp(${pos}, 'mortgage')">Закласти (+250)</button>`;
-                if (isMortgaged) btnContainer.innerHTML += `<button class="manage-prop-btn btn-unmortgage" ${myBalance < 500 ? 'disabled':''} onclick="manageProp(${pos}, 'unmortgage')">Викупити із застави (500)</button>`;
+                if (!isMortgaged) btnContainer.innerHTML += `<button class="manage-prop-btn btn-mortgage" onclick="manageProp(${pos}, 'mortgage')">Закласти (+${mortgageVal})</button>`;
+                if (isMortgaged) btnContainer.innerHTML += `<button class="manage-prop-btn btn-unmortgage" ${myBalance < unmortgageVal ? 'disabled':''} onclick="manageProp(${pos}, 'unmortgage')">Викупити із застави (${unmortgageVal})</button>`;
             } else {
                 const myGroup = colorGroupsList.find(g => g.includes(pos));
                 const ownsAll = myGroup ? myGroup.every(p => globalGameState.properties[p] === myUsername) : false;
                 const minOtherInGroup = myGroup ? Math.min(...myGroup.filter(p => p !== pos).map(p => globalGameState.upgrades[p] || 0)) : 0;
                 const canUpgradeEvenly = (minOtherInGroup >= upgrades);
                 if (ownsAll && !isMortgaged && upgrades < 3 && !globalGameState.has_upgraded_this_turn && canUpgradeEvenly) {
-                    btnContainer.innerHTML += `<button class="manage-prop-btn btn-unmortgage" ${myBalance < 500 ? 'disabled':''} onclick="manageProp(${pos}, 'upgrade')">Покращити (500)</button>`;
+                    btnContainer.innerHTML += `<button class="manage-prop-btn btn-unmortgage" ${myBalance < upgradeCostVal ? 'disabled':''} onclick="manageProp(${pos}, 'upgrade')">Покращити (${upgradeCostVal})</button>`;
                 }
-                if (upgrades > 0) btnContainer.innerHTML += `<button class="manage-prop-btn btn-sell-up" onclick="manageProp(${pos}, 'sell_upgrade')">Продати 1 покращення (+500)</button>`;
-                if (upgrades === 0 && !isMortgaged) btnContainer.innerHTML += `<button class="manage-prop-btn btn-mortgage" onclick="manageProp(${pos}, 'mortgage')">Закласти майно (+500)</button>`;
-                if (isMortgaged) btnContainer.innerHTML += `<button class="manage-prop-btn btn-unmortgage" ${myBalance < 1000 ? 'disabled':''} onclick="manageProp(${pos}, 'unmortgage')">Викупити із застави (1000)</button>`;
+                if (upgrades > 0) btnContainer.innerHTML += `<button class="manage-prop-btn btn-sell-up" onclick="manageProp(${pos}, 'sell_upgrade')">Продати 1 покращення (+${sellStarVal})</button>`;
+                if (upgrades === 0 && !isMortgaged) btnContainer.innerHTML += `<button class="manage-prop-btn btn-mortgage" onclick="manageProp(${pos}, 'mortgage')">Закласти майно (+${mortgageVal})</button>`;
+                if (isMortgaged) btnContainer.innerHTML += `<button class="manage-prop-btn btn-unmortgage" ${myBalance < unmortgageVal ? 'disabled':''} onclick="manageProp(${pos}, 'unmortgage')">Викупити із застави (${unmortgageVal})</button>`;
             }
             document.getElementById('manage-modal').style.display = 'flex';
         }
