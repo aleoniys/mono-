@@ -470,7 +470,7 @@ def handle_create_room(data):
             for i, p in enumerate(order):
                 room['state']['players_data'][p] = {
                     'pos': 0, 'balance': 10000, 'color': colors[i],
-                    'jail_turns': 0, 'bankrupt': False, 'doubles_rolled': 0
+                    'jail_turns': 0, 'bankrupt': False, 'doubles_rolled': 0, 'start_bonus_count': 0
                 }
             room['started'] = True
             db_update_room_status(room_name, 'playing')
@@ -526,7 +526,7 @@ def handle_join_room(data):
             for i, p in enumerate(order):
                 room['state']['players_data'][p] = {
                     'pos': 0, 'balance': 10000, 'color': colors[i], 
-                    'jail_turns': 0, 'bankrupt': False, 'doubles_rolled': 0
+                    'jail_turns': 0, 'bankrupt': False, 'doubles_rolled': 0, 'start_bonus_count': 0
                 }
             room['started'] = True
             db_update_room_status(room_name, 'playing')
@@ -644,8 +644,13 @@ def handle_roll_dice(data):
     pos = landing_pos
 
     if pos < old_pos and old_pos != 30:
-        player_data['balance'] += 2000
-        emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} проходить СТАРТ: +2000 балів!'}, to=room_name)
+        start_count = player_data.get('start_bonus_count', 0)
+        if start_count < 6:
+            player_data['balance'] += 2000
+            player_data['start_bonus_count'] = start_count + 1
+            emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} проходить СТАРТ: +2000 балів! (бонус {player_data["start_bonus_count"]}/6)'}, to=room_name)
+        else:
+            emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} проходить СТАРТ, але ліміт бонусів (6) вичерпано.'}, to=room_name)
 
     if pos == 0:
         player_data['balance'] += 1000

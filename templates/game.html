@@ -30,6 +30,7 @@
         .corner .cell-icon { font-size: clamp(25px, 4.4vmin, 40px); line-height: 1; margin-bottom: 2px; }
         .corner:hover { filter: none; }
         .corner.corner-go { background: #059669; color: #fff; }
+        .corner-bonus { font-size: clamp(9px, 1.4vmin, 13px); font-weight: 600; margin-top: 4px; opacity: 0.95; }
         .corner.corner-jail { background: linear-gradient(180deg, #ea580c 0%, #c2410c 100%); color: #fff; }
         .corner.corner-parking { background: #10b981; color: #fff; }
         .corner.corner-police { background: #dc2626; color: #fff; }
@@ -144,7 +145,8 @@
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
         .modal { background: #fff; padding: 28px; border-radius: 20px; width: 90%; max-width: 600px; max-height: 90vh; overflow-y: auto; color: #1a1a1a; font-size: 14px; font-family: 'Outfit', sans-serif; box-shadow: 0 24px 60px rgba(0,0,0,0.25); border: 1px solid #e5e7eb; }
         .modal h2 { margin: 0 0 16px 0; text-align: center; color: #1a5f4a; font-size: 1.35rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 12px; }
-        .trade-timer { text-align: center; margin: 0 0 12px 0; font-size: 0.95rem; color: #6b7280; }
+        .trade-timer { text-align: center; margin: 0 0 16px 0; font-size: 1rem; color: #64748b; padding: 10px; background: #f1f5f9; border-radius: 10px; }
+        .trade-timer strong { color: #1e293b; }
 
         .dice3d-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.88); z-index: 2000; display: flex; align-items: center; justify-content: center; flex-direction: column; perspective: 1400px; border-radius: 12px; }
         .dice3d-scene { display: flex; gap: clamp(40px, 10vw, 80px); align-items: center; justify-content: center; margin-bottom: clamp(20px, 4vw, 40px); }
@@ -165,14 +167,36 @@
         .dice3d-face.top { transform: rotateX(90deg) translateZ(var(--half)); }
         .dice3d-face.bottom { transform: rotateX(-90deg) translateZ(var(--half)); }
         .dice3d-label { color: #e5e7eb; font-size: clamp(0.9rem, 2.2vw, 1.1rem); margin: 0; font-weight: 600; }
-        .trade-timer.warning { color: #dc2626; font-weight: 600; }
-        .modal-buttons { display: flex; justify-content: center; gap: 16px; margin-top: 20px; flex-wrap: wrap; }
-        .trade-section { display: flex; gap: 24px; margin-bottom: 20px; flex-wrap: wrap; }
-        .trade-half { flex: 1; background: #f8faf9; padding: 20px; border-radius: 14px; border: 2px solid #e5e7eb; min-width: 200px; }
-        .trade-half h3 { margin: 0 0 12px 0; font-size: 0.9rem; color: #6b7b6e; font-weight: 600; }
-        .prop-list { margin-top: 12px; max-height: 160px; overflow-y: auto; background: #fff; border: 2px solid #e5e7eb; padding: 10px; border-radius: 10px; }
-        .money-input { width: 100%; padding: 10px 14px; margin-top: 8px; border: 2px solid #e5e7eb; border-radius: 10px; font-family: inherit; font-size: 1rem; }
-        .money-input:focus { outline: none; border-color: #1a5f4a; }
+        .trade-timer.warning { color: #dc2626; font-weight: 700; background: #fef2f2; }
+        .modal-buttons { display: flex; justify-content: center; gap: 16px; margin-top: 24px; flex-wrap: wrap; }
+        .trade-section { display: flex; gap: 20px; margin-bottom: 24px; flex-wrap: wrap; align-items: stretch; }
+        .trade-half { flex: 1; min-width: 220px; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08); border: 1px solid #e2e8f0; }
+        .trade-half.give { background: linear-gradient(180deg, #ecfdf5 0%, #d1fae5 100%); }
+        .trade-half.receive { background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%); }
+        .trade-half h3 { margin: 0; padding: 14px 16px; font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: #fff; }
+        .trade-half.give h3 { background: linear-gradient(135deg, #059669 0%, #047857 100%); }
+        .trade-half.receive h3 { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
+        .trade-half-inner { padding: 16px; }
+        .trade-money-row { margin-bottom: 14px; }
+        .trade-money-row label { display: block; font-size: 0.8rem; color: #64748b; font-weight: 600; margin-bottom: 6px; }
+        .money-input { width: 100%; padding: 12px 16px; border: 2px solid #cbd5e1; border-radius: 12px; font-family: inherit; font-size: 1.1rem; font-weight: 600; }
+        .money-input:focus { outline: none; border-color: #059669; box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2); }
+        .prop-list { margin-top: 10px; max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+        .trade-prop-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #fff; border-radius: 10px; border: 2px solid #e2e8f0; cursor: pointer; transition: border-color 0.2s, background 0.2s; }
+        .trade-prop-item:hover { border-color: #94a3b8; background: #f8fafc; }
+        .trade-prop-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #059669; cursor: pointer; flex-shrink: 0; }
+        .trade-prop-item span { font-weight: 500; color: #334155; flex: 1; }
+        .trade-empty { padding: 14px; text-align: center; color: #94a3b8; font-size: 0.9rem; font-style: italic; background: rgba(255,255,255,0.6); border-radius: 10px; }
+        #trade-modal .modal { max-width: 640px; }
+        .trade-arrow { display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 1.5rem; flex-shrink: 0; }
+        .incoming-trade-block { padding: 16px; border-radius: 12px; margin-bottom: 12px; }
+        .incoming-trade-block.offer { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 2px solid #a7f3d0; }
+        .incoming-trade-block.request { background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 2px solid #93c5fd; }
+        .incoming-trade-block h3 { margin: 0 0 10px 0; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; }
+        .incoming-trade-money { font-size: 1.25rem; font-weight: 700; color: #1e293b; margin-bottom: 8px; }
+        .incoming-trade-props { display: flex; flex-wrap: wrap; gap: 6px; }
+        .incoming-trade-props .prop-tag { background: #fff; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: 500; color: #334155; border: 1px solid #e2e8f0; }
+        .incoming-trade-props .no-props { color: #94a3b8; font-style: italic; font-size: 0.9rem; }
         .manage-prop-btn { width: 100%; padding: 12px; margin: 6px 0; border-radius: 10px; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: transform 0.1s; }
         .btn-sell-up { background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%); color: #fff; }
         .btn-mortgage { background: linear-gradient(180deg, #64748b 0%, #475569 100%); color: #fff; }
@@ -194,6 +218,7 @@
             .modal { width: 95%; padding: 20px; max-height: 85vh; }
             .trade-section { flex-direction: column; }
             .trade-half { min-width: 100%; }
+            .trade-arrow { margin: 8px 0; transform: rotate(90deg); }
         }
         @media (max-height: 560px) {
             .board { max-width: min(100%, 95vh - 40px); }
@@ -271,23 +296,32 @@
 
     <div id="trade-modal" class="modal-overlay">
         <div class="modal">
-            <h2 id="trade-modal-title">Торгівля</h2>
+            <h2 id="trade-modal-title">Обмін з гравцем</h2>
             <div class="trade-section">
-                <div class="trade-half">
-                    <h3>Я ВІДДАЮ</h3>
-                    <label>Бали (Макс <span id="my-max-money">0</span>):</label>
-                    <input type="number" id="trade-offer-money" class="money-input" value="0" min="0">
-                    <div class="prop-list" id="my-props-list"></div>
+                <div class="trade-half give">
+                    <h3>Я віддаю</h3>
+                    <div class="trade-half-inner">
+                        <div class="trade-money-row">
+                            <label>Бали (макс. <span id="my-max-money">0</span>)</label>
+                            <input type="number" id="trade-offer-money" class="money-input" value="0" min="0">
+                        </div>
+                        <div class="prop-list" id="my-props-list"></div>
+                    </div>
                 </div>
-                <div class="trade-half">
-                    <h3>Я ХОЧУ ОТРИМАТИ</h3>
-                    <label>Бали (Макс <span id="target-max-money">0</span>):</label>
-                    <input type="number" id="trade-request-money" class="money-input" value="0" min="0">
-                    <div class="prop-list" id="target-props-list"></div>
+                <div class="trade-arrow" aria-hidden="true">⇄</div>
+                <div class="trade-half receive">
+                    <h3>Я хочу отримати</h3>
+                    <div class="trade-half-inner">
+                        <div class="trade-money-row">
+                            <label>Бали (макс. <span id="target-max-money">0</span>)</label>
+                            <input type="number" id="trade-request-money" class="money-input" value="0" min="0">
+                        </div>
+                        <div class="prop-list" id="target-props-list"></div>
+                    </div>
                 </div>
             </div>
             <div class="modal-buttons">
-                <button class="btn btn-buy" onclick="sendTradeOffer()">Запропонувати</button>
+                <button class="btn btn-buy" onclick="sendTradeOffer()">Запропонувати обмін</button>
                 <button class="btn btn-skip" onclick="closeTradeModal()">Скасувати</button>
             </div>
         </div>
@@ -295,11 +329,17 @@
 
     <div id="incoming-trade-modal" class="modal-overlay">
         <div class="modal">
-            <h2 id="incoming-trade-title">Пропозиція обміну!</h2>
+            <h2 id="incoming-trade-title">Пропозиція обміну</h2>
             <p id="incoming-trade-timer" class="trade-timer">Час на відповідь: <strong>30</strong> сек</p>
-            <div class="trade-section">
-                <div class="trade-half"><h3>ГРАВЕЦЬ ВІДДАЄ:</h3><p id="incoming-offer-text"></p></div>
-                <div class="trade-half"><h3>ГРАВЕЦЬ ХОЧЕ:</h3><p id="incoming-request-text"></p></div>
+            <div class="trade-section" style="flex-direction: column;">
+                <div class="incoming-trade-block offer">
+                    <h3>Віддає вам</h3>
+                    <div id="incoming-offer-content"></div>
+                </div>
+                <div class="incoming-trade-block request">
+                    <h3>Просить у вас</h3>
+                    <div id="incoming-request-content"></div>
+                </div>
             </div>
             <div class="modal-buttons">
                 <button class="btn btn-buy" onclick="respondToTrade(true)">Прийняти</button>
@@ -373,22 +413,16 @@
         let currentTradeSender = null;
         let prevTurnPlayer = null;
 
-        // Звуки: спливання часу (тік) та "твій хід"
-        const SOUND_TIMER_TICK = 'https://bigsoundbank.com/UPLOAD/mp3/0082.mp3'; // таймер (CC0)
+        // Звуки: спливання часу (тік) та "твій хід" — Big Sound Bank (CC0)
+        const SOUND_TIMER_TICK = 'https://bigsoundbank.com/UPLOAD/mp3/0082.mp3';
+        const SOUND_YOUR_TURN = 'https://bigsoundbank.com/UPLOAD/mp3/2114.mp3'; // дзвіночок
         const audioTimerTick = new Audio(SOUND_TIMER_TICK);
+        const audioYourTurn = new Audio(SOUND_YOUR_TURN);
         function playYourTurnSound() {
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.frequency.value = 880;
-                osc.type = 'sine';
-                gain.gain.setValueAtTime(0.15, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
-                osc.start(ctx.currentTime);
-                osc.stop(ctx.currentTime + 0.2);
+                audioYourTurn.currentTime = 0;
+                audioYourTurn.volume = 0.6;
+                audioYourTurn.play().catch(function() {});
             } catch (e) {}
         }
         function playTimerTickSound() {
@@ -427,7 +461,8 @@
                     const cornerIcons = { 0: "🏁", 10: "⛓️", 20: "🅿️", 30: "🚔" };
                     const ico = cornerIcons[i] || "⬜";
                     const txt = companyNames[i] || (i === 0 ? "СТАРТ" : i === 10 ? "ТЮРМА" : i === 20 ? "ПАРКОВКА" : "ПОЛІЦІЯ");
-                    cell.innerHTML = `<div class="cell-content" style="justify-content: center;"><div class="cell-icon">${ico}</div><div>${txt}</div></div><div class="tokens-container" id="tokens-${i}"></div>`;
+                    const bonusLine = (i === 0) ? '<div class="corner-bonus">+1000 балів</div>' : '';
+                    cell.innerHTML = `<div class="cell-content" style="justify-content: center;"><div class="cell-icon">${ico}</div><div>${txt}</div>${bonusLine}</div><div class="tokens-container" id="tokens-${i}"></div>`;
                 } else {
                     cell.classList.add('chance-cell');
                     cell.innerHTML = `<div class="cell-content" style="justify-content: center;"><div class="chance-question">❓</div></div><div class="tokens-container" id="tokens-${i}"></div>`;
@@ -527,9 +562,10 @@
                 cellsMap[cellIndex].style.backgroundColor = ownerColor;
                 if (state.mortgages && state.mortgages[cellStr]) {
                     cellsMap[cellIndex].classList.add('mortgaged');
+                    const turnsLeft = state.mortgages[cellStr];
                     document.getElementById(`colorbar-${cellIndex}`).innerHTML = '🔒';
                     const mInfo = document.getElementById(`mortgage-info-${cellIndex}`);
-                    if (mInfo) { mInfo.style.display = 'block'; mInfo.innerText = `🔒 ЗАКЛАДЕНО (${state.mortgages[cellStr]} хід.)`; }
+                    if (mInfo) { mInfo.style.display = 'block'; mInfo.innerHTML = `🔒 ЗАКЛАДЕНО<br><span style="font-size:0.9em;">До втрати: ${turnsLeft} ходів</span>`; }
                 } else {
                     let rentVal;
                     if (carCellsList.includes(cellIndex)) {
@@ -629,7 +665,9 @@
                     btnBuy.style.display = 'block';
                     btnSkip.style.display = 'block';
                     const myPos = state.players_data[myUsername].pos;
-                    btnBuy.innerText = 'Купити (' + getCellPrice(myPos) + ')';
+                    const buyPrice = getCellPrice(myPos);
+                    btnBuy.innerText = 'Купити (' + buyPrice + ')';
+                    btnBuy.disabled = state.players_data[myUsername].balance < buyPrice;
                 } else { btnRoll.style.display = 'block'; btnRoll.disabled = true; btnRoll.innerText = 'Очікування рішення...'; }
             } else {
                 btnRoll.style.display = 'block';
@@ -648,9 +686,10 @@
                             const currentLevel = state.upgrades[myPos] || 0;
                             const minOtherInGroup = Math.min(...myGroup.filter(p => p !== myPos).map(p => state.upgrades[p] || 0));
                             const upgradeCost = getUpgradeCost(myPos);
-                            if (ownsAll && currentLevel < 3 && minOtherInGroup >= currentLevel && state.players_data[myUsername].balance >= upgradeCost) {
+                            if (ownsAll && currentLevel < 3 && minOtherInGroup >= currentLevel) {
                                 btnUpgrade.style.display = 'block';
                                 btnUpgrade.innerText = '⭐ Покращити (' + upgradeCost + ')';
+                                btnUpgrade.disabled = state.players_data[myUsername].balance < upgradeCost;
                             }
                         }
                     }
@@ -731,7 +770,10 @@
             let info = isCar
                 ? `Автомобілів у вас: ${carCellsList.filter(p => globalGameState.properties[p] === myUsername).length}<br>Оренда залежить від кількості авто.<br>`
                 : `Покращень: ${upgrades}<br>`;
-            if (isMortgaged) info += `<span style="color:#e74c3c; font-weight:bold;">ЗАКЛАДЕНО</span>`;
+            if (isMortgaged) {
+                const turnsLeft = globalGameState.mortgages[pos];
+                info += `<span style="color:#e74c3c; font-weight:bold;">ЗАКЛАДЕНО</span><br><span style="font-size:0.9em;">До втрати поля: ${turnsLeft} ходів</span>`;
+            }
             document.getElementById('manage-info').innerHTML = info;
 
             const btnContainer = document.getElementById('manage-buttons');
@@ -798,11 +840,17 @@
             myPropsDiv.innerHTML = ''; targetPropsDiv.innerHTML = '';
             let hasMyProps = false, hasTargetProps = false;
             for (let i = 0; i < 40; i++) {
-                if (globalGameState.properties[i] === myUsername) { hasMyProps = true; myPropsDiv.innerHTML += `<label><input type="checkbox" value="${i}" class="offer-prop-check"> ${companyNames[i]}</label>`; }
-                if (globalGameState.properties[i] === targetName) { hasTargetProps = true; targetPropsDiv.innerHTML += `<label><input type="checkbox" value="${i}" class="request-prop-check"> ${companyNames[i]}</label>`; }
+                if (globalGameState.properties[i] === myUsername) {
+                    hasMyProps = true;
+                    myPropsDiv.innerHTML += `<label class="trade-prop-item"><input type="checkbox" value="${i}" class="offer-prop-check"><span>${companyNames[i]}</span></label>`;
+                }
+                if (globalGameState.properties[i] === targetName) {
+                    hasTargetProps = true;
+                    targetPropsDiv.innerHTML += `<label class="trade-prop-item"><input type="checkbox" value="${i}" class="request-prop-check"><span>${companyNames[i]}</span></label>`;
+                }
             }
-            if (!hasMyProps) myPropsDiv.innerHTML = '<i>Немає компаній</i>';
-            if (!hasTargetProps) targetPropsDiv.innerHTML = '<i>Немає компаній</i>';
+            if (!hasMyProps) myPropsDiv.innerHTML = '<div class="trade-empty">Немає компаній для обміну</div>';
+            if (!hasTargetProps) targetPropsDiv.innerHTML = '<div class="trade-empty">У гравця немає компаній</div>';
             document.getElementById('trade-modal').style.display = 'flex';
         }
 
@@ -826,11 +874,19 @@
             if (data.target === myUsername) {
                 if (tradeResponseTimerId) clearInterval(tradeResponseTimerId);
                 currentTradeSender = data.sender;
-                let offerText = `Бали: <b>${data.offer_money}</b><br>Компанії: ` + (data.offer_props.length > 0 ? data.offer_props.map(i => companyNames[i]).join(', ') : "Немає");
-                let reqText = `Бали: <b>${data.request_money}</b><br>Компанії: ` + (data.request_props.length > 0 ? data.request_props.map(i => companyNames[i]).join(', ') : "Немає");
                 document.getElementById('incoming-trade-title').innerText = `Пропозиція від ${data.sender}`;
-                document.getElementById('incoming-offer-text').innerHTML = offerText;
-                document.getElementById('incoming-request-text').innerHTML = reqText;
+                const offerContent = document.getElementById('incoming-offer-content');
+                const requestContent = document.getElementById('incoming-request-content');
+                const offerMoney = parseInt(data.offer_money, 10) || 0;
+                const requestMoney = parseInt(data.request_money, 10) || 0;
+                const offerPropsHtml = (data.offer_props && data.offer_props.length > 0)
+                    ? '<div class="incoming-trade-props">' + data.offer_props.map(i => `<span class="prop-tag">${companyNames[i] || 'Клітинка ' + i}</span>`).join('') + '</div>'
+                    : '<div class="incoming-trade-props"><span class="no-props">Немає</span></div>';
+                const requestPropsHtml = (data.request_props && data.request_props.length > 0)
+                    ? '<div class="incoming-trade-props">' + data.request_props.map(i => `<span class="prop-tag">${companyNames[i] || 'Клітинка ' + i}</span>`).join('') + '</div>'
+                    : '<div class="incoming-trade-props"><span class="no-props">Немає</span></div>';
+                offerContent.innerHTML = '<div class="incoming-trade-money">💰 ' + offerMoney + ' балів</div>' + offerPropsHtml;
+                requestContent.innerHTML = '<div class="incoming-trade-money">💰 ' + requestMoney + ' балів</div>' + requestPropsHtml;
                 document.getElementById('incoming-trade-modal').dataset.offer = JSON.stringify(data);
                 document.getElementById('incoming-trade-modal').style.display = 'flex';
                 tradeResponseSecondsLeft = 30;
