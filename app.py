@@ -383,8 +383,8 @@ CHANCE_CELLS = [c['id'] for c in BOARD_DATA['cells'] if c.get('type') == 'chance
 TAX_CELLS = [c['id'] for c in BOARD_DATA['cells'] if c.get('type') == 'tax']
 TAX_AMOUNT = 2000
 JAIL_FINE = 500
-# Групи монополій: 2 компанії → Шанс → 1 компанія (наприклад [1,2,6], [5,7,9])
-COLOR_GROUPS = [[1, 2, 6], [5, 7, 9], [11, 12, 16], [15, 17, 19], [21, 22, 26], [25, 27, 29], [31, 32, 36], [35, 38]]
+# Групи монополій: на полі завжди 2 компанії поспіль, потім Шанс (без переривання). Групи: [1,2,6], [5,8,9], ...
+COLOR_GROUPS = [[1, 2, 6], [5, 8, 9], [11, 12, 16], [15, 18, 19], [21, 22, 26], [25, 28, 29], [31, 32, 36], [35, 38]]
 UPGRADE_COST_DEFAULT = BOARD_DATA.get('upgrade_cost_per_star', 500)
 SELL_STAR_DEFAULT = BOARD_DATA.get('sell_star_value', 500)
 
@@ -831,8 +831,8 @@ def handle_pay_jail_fine(data):
     if player_data.get('balance', 0) < JAIL_FINE: return
     player_data['balance'] -= JAIL_FINE
     player_data['jail_turns'] = 0
-    emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} сплатив {JAIL_FINE} балів і вийшов з тюрми!'}, to=room_name)
-    pass_turn(state, room)
+    emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} сплатив {JAIL_FINE} балів і вийшов з тюрми! Тепер киньте кубики.'}, to=room_name)
+    # Хід не переходить — гравець залишається поточним і має кинути кубики
     persist_game_state(room_name, state)
     emit('update_state', state, to=room_name)
 
