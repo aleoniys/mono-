@@ -413,16 +413,40 @@
         let currentTradeSender = null;
         let prevTurnPlayer = null;
 
-        // Звуки: спливання часу (тік) та "твій хід" — Big Sound Bank (CC0)
+        // Звуки: спливання часу (тік) та "твій хід" (1 с)
         const SOUND_TIMER_TICK = 'https://bigsoundbank.com/UPLOAD/mp3/0082.mp3';
-        const SOUND_YOUR_TURN = 'https://bigsoundbank.com/UPLOAD/mp3/2114.mp3'; // дзвіночок
         const audioTimerTick = new Audio(SOUND_TIMER_TICK);
-        const audioYourTurn = new Audio(SOUND_YOUR_TURN);
+        let yourTurnOsc = null;
+        let yourTurnCtx = null;
+        function stopYourTurnSound() {
+            try {
+                if (yourTurnOsc && yourTurnCtx) {
+                    yourTurnOsc.stop(0);
+                    yourTurnOsc = null;
+                    yourTurnCtx.close();
+                    yourTurnCtx = null;
+                }
+            } catch (e) {}
+        }
         function playYourTurnSound() {
             try {
-                audioYourTurn.currentTime = 0;
-                audioYourTurn.volume = 0.6;
-                audioYourTurn.play().catch(function() {});
+                stopYourTurnSound();
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                yourTurnCtx = ctx;
+                const osc = ctx.createOscillator();
+                yourTurnOsc = osc;
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = 660;
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.05);
+                gain.gain.linearRampToValueAtTime(0.15, ctx.currentTime + 0.4);
+                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 1);
+                osc.onended = function() { yourTurnOsc = null; yourTurnCtx = null; };
             } catch (e) {}
         }
         function playTimerTickSound() {
@@ -514,7 +538,7 @@
             const isMyTurn = (myUsername === currentTurnPlayer);
             const amIBankrupt = state.players_data[myUsername].bankrupt;
 
-            if (isMyTurn && (prevTurnPlayer === null || prevTurnPlayer !== myUsername)) playYourTurnSound();
+            if (isMyTurn && prevTurnPlayer !== null && prevTurnPlayer !== myUsername) playYourTurnSound();
             prevTurnPlayer = currentTurnPlayer;
 
             if (!amIBankrupt) {
@@ -701,7 +725,7 @@
         });
 
         // ІГРОВІ ДІЇ
-        function rollDice() { socket.emit('roll_dice', { room_name: currentRoom }); document.getElementById('btn-roll').disabled = true; }
+        function rollDice() { stopYourTurnSound(); socket.emit('roll_dice', { room_name: currentRoom }); document.getElementById('btn-roll').disabled = true; }
         function buyProperty() { socket.emit('buy_property', { room_name: currentRoom }); }
         function skipBuy() { socket.emit('skip_buy', { room_name: currentRoom }); }
         function payDebt() { socket.emit('pay_debt', { room_name: currentRoom }); }
