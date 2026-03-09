@@ -371,11 +371,40 @@
         let timeLeft = 60;
         let currentTradeTarget = null;
         let currentTradeSender = null;
+        let prevTurnPlayer = null;
 
+        // Звуки: спливання часу (тік) та "твій хід"
+        const SOUND_TIMER_TICK = 'https://bigsoundbank.com/UPLOAD/mp3/0082.mp3'; // таймер (CC0)
+        const audioTimerTick = new Audio(SOUND_TIMER_TICK);
+        function playYourTurnSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.frequency.value = 880;
+                osc.type = 'sine';
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.2);
+            } catch (e) {}
+        }
+        function playTimerTickSound() {
+            try {
+                audioTimerTick.currentTime = 0;
+                audioTimerTick.volume = 0.5;
+                audioTimerTick.play().catch(function() {});
+            } catch (e) {}
+        }
+
+        // Поле: 0=СТАРТ (низ-право), рух за годинниковою: 0→1..10 (низ) → 11..19 (ліво вгору) → 20..30 (верх) → 31..39 (право вниз) → 0
         function drawBoard() {
             for (let i = 0; i < 40; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'cell';
+                cell.setAttribute('data-cell-id', i);
                 cell.onclick = () => onCellClick(i);
 
                 if (groupColors[i]) {
@@ -436,9 +465,9 @@
                 timeLeft--;
                 bar.style.width = ((timeLeft / 60) * 100) + '%';
                 setTimerBarColor(bar, timeLeft);
+                if (isMyTurn && timeLeft <= 10 && timeLeft > 0) playTimerTickSound();
                 if (timeLeft <= 0) {
                     clearInterval(turnTimer);
-                    // Тепер БУДЬ-ЯКИЙ клієнт може повідомити сервер про закінчення часу поточного гравця
                     socket.emit('turn_timeout', { room_name: currentRoom, target_player: targetTurnPlayer });
                 }
             }, 1000);
@@ -450,7 +479,9 @@
             const isMyTurn = (myUsername === currentTurnPlayer);
             const amIBankrupt = state.players_data[myUsername].bankrupt;
 
-            // Якщо я живий - працює мій таймер
+            if (isMyTurn && (prevTurnPlayer === null || prevTurnPlayer !== myUsername)) playYourTurnSound();
+            prevTurnPlayer = currentTurnPlayer;
+
             if (!amIBankrupt) {
                 startTimer(isMyTurn, currentTurnPlayer);
             } else {
@@ -533,33 +564,38 @@
                     if (tokensMap[name]) { tokensMap[name].remove(); delete tokensMap[name]; }
                     return;
                 }
-                const targetPos = pData.pos;
+                const targetPos = Number(pData.pos);
+                const container = document.getElementById(`tokens-${targetPos}`);
+                if (!container) return;
                 if (!tokensMap[name]) {
                     const token = document.createElement('div');
                     token.className = 'token';
                     token.style.backgroundColor = pData.color;
                     tokensMap[name] = token;
                     visualPositions[name] = targetPos;
-                    document.getElementById(`tokens-${targetPos}`).appendChild(token);
+                    container.appendChild(token);
                 }
-                const startPos = visualPositions[name];
+                const startPos = Number(visualPositions[name]);
                 if (startPos !== targetPos) {
-                    let dist = (targetPos - startPos + 40) % 40; 
+                    const dist = (targetPos - startPos + 40) % 40;
+                    const targetContainer = document.getElementById(`tokens-${targetPos}`);
+                    if (!targetContainer) return;
                     if (dist > 12) {
-                        document.getElementById(`tokens-${targetPos}`).appendChild(tokensMap[name]);
+                        targetContainer.appendChild(tokensMap[name]);
                         visualPositions[name] = targetPos;
                     } else {
                         animations.push(new Promise(async (resolve) => {
                             let current = startPos;
-                            for (let i = 0; i < dist; i++) {
-                                current = (current + 1) % 40; 
-                                const tkn = tokensMap[name];
-                                document.getElementById(`tokens-${current}`).appendChild(tkn);
-                                tkn.classList.remove('hopping'); void tkn.offsetWidth; tkn.classList.add('hopping');
+                            for (let step = 0; step < dist; step++) {
+                                current = (current + 1) % 40;
+                                const stepEl = document.getElementById(`tokens-${current}`);
+                                if (!stepEl) break;
+                                stepEl.appendChild(tokensMap[name]);
+                                tokensMap[name].classList.remove('hopping'); void tokensMap[name].offsetWidth; tokensMap[name].classList.add('hopping');
                                 await new Promise(r => setTimeout(r, 200));
                             }
-                            visualPositions[name] = targetPos; 
-                            resolve(); 
+                            visualPositions[name] = targetPos;
+                            resolve();
                         }));
                     }
                 }
@@ -672,6 +708,7 @@
             setTimeout(function() {
                 modal.style.display = 'none';
                 let msg = data.player + ' кинув: ' + data.dice1 + ' + ' + data.dice2 + ' = ' + data.total;
+                if (data.landing_cell) msg += '. Потрапив на «' + data.landing_cell + '»';
                 if (data.is_double && !data.jail_msg) msg += ' 🎲 Дубль!';
                 if (data.jail_msg) msg += ' ' + data.jail_msg;
                 addSystemMessage(msg);

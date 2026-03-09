@@ -598,9 +598,6 @@ def handle_roll_dice(data):
     is_double = (dice1 == dice2)
     player_data = state['players_data'][player]
 
-    emit('dice_rolled', {'player': player, 'dice1': dice1, 'dice2': dice2, 'total': total, 'is_double': is_double}, to=room_name)
-    socketio.sleep(1.5)
-
     if player_data['jail_turns'] > 0:
         if is_double:
             player_data['jail_turns'] = 0
@@ -608,6 +605,8 @@ def handle_roll_dice(data):
             state['extra_turn'] = False 
             emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} викидає дубль і виходить з тюрми!'}, to=room_name)
         else:
+            emit('dice_rolled', {'player': player, 'dice1': dice1, 'dice2': dice2, 'total': total, 'is_double': is_double}, to=room_name)
+            socketio.sleep(1.5)
             player_data['jail_turns'] -= 1
             emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} не викидає дубль. У тюрмі: {player_data["jail_turns"]} х.'}, to=room_name)
             pass_turn(state, room)
@@ -618,6 +617,9 @@ def handle_roll_dice(data):
         if is_double:
             player_data['doubles_rolled'] += 1
             if player_data['doubles_rolled'] == 3:
+                jail_cell = _get_cell(10, 'name') or 'ТЮРМА'
+                emit('dice_rolled', {'player': player, 'dice1': dice1, 'dice2': dice2, 'total': total, 'is_double': is_double, 'landing_pos': 10, 'landing_cell': jail_cell}, to=room_name)
+                socketio.sleep(1.5)
                 emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🚨 3 ДУБЛІ ПІДРЯД! {player} відправляється до тюрми за перевищення швидкості!'}, to=room_name)
                 player_data['pos'] = 10
                 player_data['jail_turns'] = 3
@@ -634,8 +636,12 @@ def handle_roll_dice(data):
             state['extra_turn'] = False
 
     old_pos = player_data['pos']
-    player_data['pos'] = (old_pos + total) % 40
-    pos = player_data['pos']
+    landing_pos = (old_pos + total) % 40
+    landing_cell = _get_cell(landing_pos, 'name') or f'Клітинка {landing_pos}'
+    emit('dice_rolled', {'player': player, 'dice1': dice1, 'dice2': dice2, 'total': total, 'is_double': is_double, 'landing_pos': landing_pos, 'landing_cell': landing_cell}, to=room_name)
+    socketio.sleep(1.5)
+    player_data['pos'] = landing_pos
+    pos = landing_pos
 
     if pos < old_pos and old_pos != 30:
         player_data['balance'] += 2000
