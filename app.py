@@ -379,8 +379,11 @@ def car_rent(n_cars):
     r = cell.get('rent_' + str(min(n_cars, 4) - 1))
     return r if r is not None else 0
 
-CHANCE_CELLS = [5, 9, 15, 19, 25, 29, 35, 39]
-COLOR_GROUPS = [[1,2,3], [6,7,8], [11,12,13], [16,17,18], [21,22,23], [26,27,28], [31,32,33], [36,37,38]]
+CHANCE_CELLS = [c['id'] for c in BOARD_DATA['cells'] if c.get('type') == 'chance']
+TAX_CELLS = [c['id'] for c in BOARD_DATA['cells'] if c.get('type') == 'tax']
+TAX_AMOUNT = 2000
+JAIL_FINE = 500
+COLOR_GROUPS = [[1, 3], [6, 8], [11, 13], [16, 18], [21, 23], [26, 28], [31, 33], [36, 38]]
 UPGRADE_COST_DEFAULT = BOARD_DATA.get('upgrade_cost_per_star', 500)
 SELL_STAR_DEFAULT = BOARD_DATA.get('sell_star_value', 500)
 
@@ -686,8 +689,17 @@ def handle_roll_dice(data):
                     pass_turn(state, room)
             else:
                 state['waiting_for_buy'] = True
+        elif pos in TAX_CELLS:
+            if player_data['balance'] >= TAX_AMOUNT:
+                player_data['balance'] -= TAX_AMOUNT
+                emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} сплачує податок {TAX_AMOUNT} балів.'}, to=room_name)
+                pass_turn(state, room)
+            else:
+                state['debt'] = {'player': player, 'amount': TAX_AMOUNT, 'creditor': 'SYSTEM'}
+                emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'⚠️ {player} винен {TAX_AMOUNT} балів (податок)!'}, to=room_name)
         elif pos in CHANCE_CELLS:
-            effect = random.randint(1, 6)
+            # Розширена колода Шанс: перейти на поле N, вийти з тюрми, кожен платить тобі, на СТАРТ тощо
+            effect = random.randint(1, 14)
             if effect == 1:
                 player_data['pos'] = (pos - 1) % 40
                 emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — один крок у зворотному напрямку! Тепер на клітинці {(pos - 1) % 40}.'}, to=room_name)
@@ -712,9 +724,57 @@ def handle_roll_dice(data):
                 div = int(player_data['balance'] * 0.10)
                 player_data['balance'] += div
                 emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — дивіденди 10% від депозиту (+{div} балів)!'}, to=room_name)
-            else:
+            elif effect == 6:
                 player_data['balance'] += 1500
                 emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — ви отримали спадок (+1500 балів)!'}, to=room_name)
+            elif effect == 7:
+                player_data['pos'] = 0
+                player_data['balance'] += 2000
+                emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — перехід на СТАРТ! Отримуєте 2000 балів.'}, to=room_name)
+            elif effect == 8:
+                if player_data.get('jail_turns', 0) > 0:
+                    player_data['jail_turns'] = 0
+                    emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — вийти з тюрми безкоштовно! Ви вільні.'}, to=room_name)
+                else:
+                    state['players_data'][player]['get_out_of_jail_free'] = True
+                    emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — картка «Вийти з тюрми безкоштовно». Збережено на потім!'}, to=room_name)
+            elif effect == 9:
+                each_pays = 300
+                others = [p for p in state['players_order'] if p != player and not state['players_data'][p].get('bankrupt', False)]
+                total = 0
+                for other in others:
+                    pay = min(state['players_data'][other]['balance'], each_pays)
+                    state['players_data'][other]['balance'] -= pay
+                    state['players_data'][player]['balance'] += pay
+                    total += pay
+                emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — кожен гравець платить вам {each_pays} балів. Ви отримали {total}!'}, to=room_name)
+            elif effect == 10:
+                target = random.choice([5, 15, 25, 35])
+                player_data['pos'] = target
+                cell_name = _get_cell(target, 'name') or f'Клітинка {target}'
+                emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — перехід на поле «{cell_name}» (клітинка {target}).'}, to=room_name)
+            elif effect == 11:
+                target = random.choice([1, 11, 21, 31])
+                player_data['pos'] = target
+                cell_name = _get_cell(target, 'name') or f'Клітинка {target}'
+                emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — перехід на поле «{cell_name}» (клітинка {target}).'}, to=room_name)
+            elif effect == 12:
+                player_data['balance'] += 500
+                emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — бонус від банку +500 балів!'}, to=room_name)
+            elif effect == 13:
+                pay = random.choice([200, 500, 800])
+                if player_data['balance'] >= pay:
+                    player_data['balance'] -= pay
+                    emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — штраф за паркування −{pay} балів.'}, to=room_name)
+                else:
+                    state['debt'] = {'player': player, 'amount': pay, 'creditor': 'SYSTEM'}
+                    emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — штраф {pay} балів. Не вистачає грошей — борг!'}, to=room_name)
+                    persist_game_state(room_name, state)
+                    emit('update_state', state, to=room_name)
+                    return
+            else:
+                player_data['balance'] += 1000
+                emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'🎲 ШАНС: {player} — виграш у лотерею +1000 балів!'}, to=room_name)
             pass_turn(state, room)
         elif pos not in [0, 10, 20]:
             chance_penalty = random.choice([100, 250, 500, 1000])
@@ -754,6 +814,26 @@ def handle_pay_debt(data):
             pass_turn(state, room)
             persist_game_state(room_name, state)
             emit('update_state', state, to=room_name)
+
+@socketio.on('pay_jail_fine')
+def handle_pay_jail_fine(data):
+    room_name = data['room_name']
+    room = active_rooms.get(room_name)
+    if not room: return
+    state = room['state']
+    player = current_user.username
+    if state.get('pending_trade_from') == player or state.get('debt'): return
+    current_turn_player = state['players_order'][state['turn_index']]
+    if player != current_turn_player: return
+    player_data = state['players_data'][player]
+    if player_data.get('jail_turns', 0) <= 0: return
+    if player_data.get('balance', 0) < JAIL_FINE: return
+    player_data['balance'] -= JAIL_FINE
+    player_data['jail_turns'] = 0
+    emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} сплатив {JAIL_FINE} балів і вийшов з тюрми!'}, to=room_name)
+    pass_turn(state, room)
+    persist_game_state(room_name, state)
+    emit('update_state', state, to=room_name)
 
 @socketio.on('buy_property')
 def handle_buy_property(data):

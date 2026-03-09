@@ -23,8 +23,10 @@
         /* Верх/низ: вертикальні клітини 1:2; ліво/право: горизонтальні 2:1 */
         .board { display: grid; grid-template-columns: 2fr repeat(9, 1fr) 2fr; grid-template-rows: 2fr repeat(9, 1fr) 2fr; gap: 1px; background: #374151; padding: clamp(4px, 1vw, 6px); border-radius: 12px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.4); width: 100%; max-width: min(calc(100vw - 24px), calc(100vh - 70px), 115vh); height: auto; aspect-ratio: 1 / 1; position: relative; flex-shrink: 0; }
 
-        .cell { background: #fff; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; overflow: hidden; cursor: pointer; transition: filter 0.2s; border-radius: 5px; }
+        .cell { background: #fff; display: flex; flex-direction: column; align-items: center; text-align: center; position: relative; overflow: hidden; cursor: pointer; transition: filter 0.2s, box-shadow 0.2s; border-radius: 5px; }
         .cell:hover { filter: brightness(0.96); }
+        .cell-landing-highlight { box-shadow: 0 0 0 4px #f59e0b, 0 0 20px rgba(245, 158, 11, 0.5); z-index: 5; animation: landing-glow 1.5s ease-out; }
+        @keyframes landing-glow { 0% { box-shadow: 0 0 0 6px #f59e0b, 0 0 28px rgba(245, 158, 11, 0.7); } 70% { box-shadow: 0 0 0 4px #f59e0b, 0 0 16px rgba(245, 158, 11, 0.4); } 100% { box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3); } }
         .mortgaged { filter: grayscale(100%) opacity(0.7); }
         .corner { justify-content: center; cursor: default; font-weight: 700; border-radius: 6px; }
         .corner .cell-icon { font-size: clamp(25px, 4.4vmin, 40px); line-height: 1; margin-bottom: 2px; }
@@ -35,6 +37,8 @@
         .corner.corner-parking { background: #10b981; color: #fff; }
         .corner.corner-police { background: #dc2626; color: #fff; }
         .chance-cell { background: #fff; justify-content: center; cursor: default; border-radius: 6px; }
+        .tax-cell { background: #fff; cursor: default; border-radius: 6px; }
+        .tax-color-bar { background: linear-gradient(180deg, #78716c 0%, #57534e 100%) !important; color: #fff; font-weight: 700; }
         .chance-cell .chance-question { font-size: clamp(28px, 5vmin, 48px); line-height: 1; color: #94a3b8; font-weight: 700; }
         .cell-side-left.chance-cell .chance-question, .cell-side-right.chance-cell .chance-question { writing-mode: horizontal-tb; text-orientation: mixed; }
         .chance-cell:hover { filter: none; }
@@ -118,13 +122,14 @@
         .chat-message { background: #334155; border: 1px solid #475569; padding: clamp(6px, 1vw, 10px); border-radius: 12px; align-self: flex-start; max-width: 95%; }
         .message-sender { font-size: clamp(9px, 1.2vmin, 11px); font-weight: 700; color: #7dd3fc; border-bottom: 1px dashed #475569; padding-bottom: 4px; margin-bottom: 4px; }
         .message-text { font-size: clamp(10px, 1.5vmin, 13px); color: #e2e8f0; }
+        .chat-message.system-msg { align-self: stretch; max-width: 100%; background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); border: 1px solid #334155; border-left: 4px solid #38bdf8; padding: 10px 14px; border-radius: 10px; }
+        .chat-message.system-msg .message-sender { color: #7dd3fc; border-bottom: none; padding-bottom: 0; margin-bottom: 6px; font-size: clamp(9px, 1.1vmin, 10px); text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9; }
+        .chat-message.system-msg .message-text { color: #e2e8f0; font-size: clamp(11px, 1.5vmin, 14px); line-height: 1.4; }
         .chat-input-area { display: flex; padding: clamp(8px, 1vw, 12px); background: #0f172a; border-top: 1px solid #334155; flex-shrink: 0; gap: 8px; }
         .chat-input-area input { flex-grow: 1; padding: 10px 14px; border: 2px solid #475569; border-radius: 10px; font-family: inherit; font-size: clamp(11px, 1.5vmin, 14px); background: #1e293b; color: #f1f5f9; }
         .chat-input-area input::placeholder { color: #94a3b8; }
         .chat-input-area input:focus { outline: none; border-color: #38bdf8; }
         .chat-input-area button { background: linear-gradient(180deg, #1a5f4a 0%, #0f3d32 100%); color: #fff; border: none; padding: 10px 18px; border-radius: 10px; cursor: pointer; font-family: inherit; font-weight: 600; font-size: 0.9rem; }
-        .chat-message.system-msg { background: #451a03; border-color: #b45309; }
-        .chat-message.system-msg .message-sender { color: #fbbf24; }
 
         .action-buttons-wrap { background: #1e293b; padding: clamp(6px, 0.8vw, 10px); flex-shrink: 0; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; }
         .action-buttons { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
@@ -136,6 +141,7 @@
         .btn-skip { background: linear-gradient(180deg, #94a3b8 0%, #64748b 100%); color: #fff; }
         .btn-upgrade { background: linear-gradient(180deg, #f59e0b 0%, #d97706 100%); color: #fff; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3); }
         .btn-pay-debt { background: linear-gradient(180deg, #dc2626 0%, #b91c1c 100%); color: #fff; }
+        .btn-pay-jail { background: linear-gradient(180deg, #ea580c 0%, #c2410c 100%); color: #fff; }
         .btn-exit { background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%); color: #fff; }
         .btn:disabled { background: #d1d5db !important; cursor: not-allowed; box-shadow: none; color: #6b7280; transform: none; }
         .bankrupt-exit-block { text-align: center; padding: 14px 0; margin-bottom: 8px; background: rgba(220, 38, 38, 0.1); border: 2px solid #dc2626; border-radius: 12px; }
@@ -250,6 +256,7 @@
                     <button id="btn-upgrade" class="btn btn-upgrade" style="display:none;" onclick="upgradeProperty()">⭐ Покращити (500)</button>
                     <button id="btn-skip" class="btn btn-skip" style="display:none;" onclick="skipBuy()">Пропустити</button>
                     <button id="btn-pay-debt" class="btn btn-pay-debt" style="display:none;" onclick="payDebt()">Сплатити борг</button>
+                    <button id="btn-pay-jail" class="btn btn-pay-jail" style="display:none;" onclick="payJailFine()">Заплатити 500 і вийти з тюрми</button>
                     <button id="btn-exit" class="btn btn-exit" style="display:none;" onclick="window.location.href='/'">🔙 Повернутися в лоббі</button>
                 </div>
             </div>
@@ -386,20 +393,21 @@
         function getUnmortgage(id) { const c = boardById[id]; return (c && c.unmortgage != null) ? c.unmortgage : 1000; }
         function getSellStar(id) { const c = boardById[id]; return (c && c.sell_star != null) ? c.sell_star : (boardCellsData.sell_star_value != null ? boardCellsData.sell_star_value : 500); }
 
+        const taxCellsList = boardCells.filter(function(c) { return c.type === 'tax'; }).map(function(c) { return c.id; });
         const groupColors = {
-            1:'#8e44ad', 2:'#8e44ad', 3:'#8e44ad', 4:'#64748b', 6:'#3498db', 7:'#3498db', 8:'#3498db', 
-            11:'#e84393', 12:'#e84393', 13:'#e84393', 14:'#64748b', 16:'#e67e22', 17:'#e67e22', 18:'#e67e22', 
-            21:'#c0392b', 22:'#c0392b', 23:'#c0392b', 24:'#64748b', 26:'#f1c40f', 27:'#f1c40f', 28:'#f1c40f', 
-            31:'#27ae60', 32:'#27ae60', 33:'#27ae60', 34:'#64748b', 36:'#2980b9', 37:'#2980b9', 38:'#2980b9'  
+            1:'#8e44ad', 3:'#8e44ad', 4:'#64748b', 6:'#3498db', 8:'#3498db', 
+            11:'#e84393', 13:'#e84393', 14:'#64748b', 16:'#e67e22', 18:'#e67e22', 
+            21:'#c0392b', 23:'#c0392b', 24:'#64748b', 26:'#f1c40f', 28:'#f1c40f', 
+            31:'#27ae60', 33:'#27ae60', 34:'#64748b', 36:'#2980b9', 38:'#2980b9'  
         };
         const colorGroupsList = [
-            [1,2,3], [6,7,8], [11,12,13], [16,17,18],
-            [21,22,23], [26,27,28], [31,32,33], [36,37,38]
+            [1, 3], [6, 8], [11, 13], [16, 18],
+            [21, 23], [26, 28], [31, 33], [36, 38]
         ];
         const propertyIcons = {
-            1: "🏪", 2: "☕", 3: "🍞", 4: "🚗", 6: "🚗", 7: "🔧", 8: "⚙️", 11: "💇", 12: "💄", 13: "💈", 14: "🚗",
-            16: "🍕", 17: "🍣", 18: "🍽️", 21: "🎬", 22: "🎳", 23: "🌊", 24: "🚗", 26: "💊", 27: "🏥", 28: "🦷",
-            31: "📡", 32: "💻", 33: "🤖", 34: "🚗", 36: "🏬", 37: "🏨", 38: "🏦"
+            1: "🏪", 3: "🍞", 4: "🚗", 6: "🚗", 8: "⚙️", 11: "💇", 13: "💈", 14: "🚗",
+            16: "🍕", 18: "🍽️", 21: "🎬", 23: "🌊", 24: "🚗", 26: "💊", 28: "🦷",
+            31: "📡", 33: "🤖", 34: "🚗", 36: "🏬", 38: "🏦"
         };
 
         const board = document.getElementById('board');
@@ -472,8 +480,15 @@
                         <div class="color-bar" id="colorbar-${i}" style="background-color: ${groupColors[i]}"><span id="rent-${i}">${initPrice}</span></div>
                         <div class="cell-content">
                             <div><span class="cell-icon">${icon}</span> ${companyNames[i]}</div>
-                            <div style="font-size: 0.8em; color: #dc2626; font-weight: bold; display:none;" id="mortgage-info-${i}">🔒 ЗАКЛАДЕНО</div>
                         </div>
+                        <div class="tokens-container" id="tokens-${i}"></div>
+                    `;
+                } else if (taxCellsList.indexOf(i) !== -1) {
+                    const taxName = companyNames[i] || 'Податок';
+                    cell.classList.add('tax-cell');
+                    cell.innerHTML = `
+                        <div class="color-bar tax-color-bar" id="colorbar-${i}">2000</div>
+                        <div class="cell-content"><div><span class="cell-icon">📋</span> ${taxName}</div></div>
                         <div class="tokens-container" id="tokens-${i}"></div>
                     `;
                 } else if (i === 0 || i === 10 || i === 20 || i === 30) {
@@ -574,22 +589,19 @@
                 if(groupColors[i]) {
                     const defVal = getCellPrice(i);
                     document.getElementById(`colorbar-${i}`).innerHTML = '<span id="rent-' + i + '">' + defVal + '</span>';
-                    const mInfo = document.getElementById('mortgage-info-' + i);
-                    if (mInfo) mInfo.style.display = 'none';
                 }
             }
             
             for (const [cellStr, ownerName] of Object.entries(state.properties)) {
                 const cellIndex = parseInt(cellStr);
+                if (taxCellsList.indexOf(cellIndex) !== -1) continue;
                 const ownerColor = state.players_data[ownerName].color;
                 cellsMap[cellIndex].style.border = '';
                 cellsMap[cellIndex].style.backgroundColor = ownerColor;
                 if (state.mortgages && state.mortgages[cellStr]) {
                     cellsMap[cellIndex].classList.add('mortgaged');
                     const turnsLeft = state.mortgages[cellStr];
-                    document.getElementById(`colorbar-${cellIndex}`).innerHTML = '🔒';
-                    const mInfo = document.getElementById(`mortgage-info-${cellIndex}`);
-                    if (mInfo) { mInfo.style.display = 'block'; mInfo.innerHTML = `🔒 ЗАКЛАДЕНО<br><span style="font-size:0.9em;">До втрати: ${turnsLeft} ходів</span>`; }
+                    document.getElementById(`colorbar-${cellIndex}`).innerHTML = turnsLeft + ' ходів';
                 } else {
                     let rentVal;
                     if (carCellsList.includes(cellIndex)) {
@@ -602,8 +614,6 @@
                         rentVal = rentByStars[cellIndex] ? rentByStars[cellIndex][stars] : 0;
                         document.getElementById(`colorbar-${cellIndex}`).innerHTML = '<span id="rent-' + cellIndex + '">' + rentVal + '</span>' + (upgrades > 0 ? '<span class="color-bar-stars">' + '⭐'.repeat(upgrades) + '</span>' : '');
                     }
-                    const mInfo = document.getElementById(`mortgage-info-${cellIndex}`);
-                    if (mInfo) mInfo.style.display = 'none';
                 }
             }
 
@@ -612,10 +622,11 @@
             const btnSkip = document.getElementById('btn-skip');
             const btnUpgrade = document.getElementById('btn-upgrade');
             const btnPayDebt = document.getElementById('btn-pay-debt');
+            const btnPayJail = document.getElementById('btn-pay-jail');
             const btnExit = document.getElementById('btn-exit');
             
             btnRoll.style.display = 'none'; btnBuy.style.display = 'none'; btnSkip.style.display = 'none'; 
-            btnUpgrade.style.display = 'none'; btnPayDebt.style.display = 'none'; btnExit.style.display = 'none';
+            btnUpgrade.style.display = 'none'; btnPayDebt.style.display = 'none'; btnPayJail.style.display = 'none'; btnExit.style.display = 'none';
 
             let animations = [];
             state.players_order.forEach(name => {
@@ -701,6 +712,10 @@
                 } else if (isMyTurn && !state.debt) {
                     btnRoll.disabled = false;
                     btnRoll.innerText = state.players_data[myUsername].jail_turns > 0 ? '🎲 Кинути (Спроба дубля)' : '🎲 Кинути кубики';
+                    if (state.players_data[myUsername].jail_turns > 0 && state.players_data[myUsername].balance >= 500) {
+                        btnPayJail.style.display = 'block';
+                        btnPayJail.disabled = false;
+                    }
                     
                     const myPos = state.players_data[myUsername].pos;
                     if (state.properties[myPos] === myUsername && !state.has_upgraded_this_turn && !carCellsList.includes(myPos)) {
@@ -711,9 +726,8 @@
                             const minOtherInGroup = Math.min(...myGroup.filter(p => p !== myPos).map(p => state.upgrades[p] || 0));
                             const upgradeCost = getUpgradeCost(myPos);
                             if (ownsAll && currentLevel < 3 && minOtherInGroup >= currentLevel) {
-                                btnUpgrade.style.display = 'block';
-                                btnUpgrade.innerText = '⭐ Покращити (' + upgradeCost + ')';
-                                btnUpgrade.disabled = state.players_data[myUsername].balance < upgradeCost;
+                                // Костя: не показувати Покращити при попаданні на власну монополію
+                                // btnUpgrade залишається прихованою
                             }
                         }
                     }
@@ -729,6 +743,7 @@
         function buyProperty() { socket.emit('buy_property', { room_name: currentRoom }); }
         function skipBuy() { socket.emit('skip_buy', { room_name: currentRoom }); }
         function payDebt() { socket.emit('pay_debt', { room_name: currentRoom }); }
+        function payJailFine() { socket.emit('pay_jail_fine', { room_name: currentRoom }); document.getElementById('btn-pay-jail').style.display = 'none'; }
         function upgradeProperty() { socket.emit('upgrade_property', { room_name: currentRoom }); document.getElementById('btn-upgrade').style.display = 'none'; }
 
         function diceHtml(val, id) {
@@ -775,6 +790,11 @@
                 if (data.is_double && !data.jail_msg) msg += ' 🎲 Дубль!';
                 if (data.jail_msg) msg += ' ' + data.jail_msg;
                 addSystemMessage(msg);
+                if (data.landing_pos !== undefined && typeof data.landing_pos === 'number' && cellsMap[data.landing_pos]) {
+                    document.querySelectorAll('.cell-landing-highlight').forEach(function(el) { el.classList.remove('cell-landing-highlight'); });
+                    cellsMap[data.landing_pos].classList.add('cell-landing-highlight');
+                    setTimeout(function() { if (cellsMap[data.landing_pos]) cellsMap[data.landing_pos].classList.remove('cell-landing-highlight'); }, 1500);
+                }
             }, 1000);
         });
 
@@ -796,7 +816,7 @@
                 : `Покращень: ${upgrades}<br>`;
             if (isMortgaged) {
                 const turnsLeft = globalGameState.mortgages[pos];
-                info += `<span style="color:#e74c3c; font-weight:bold;">ЗАКЛАДЕНО</span><br><span style="font-size:0.9em;">До втрати поля: ${turnsLeft} ходів</span>`;
+                info += `<span style="color:#e74c3c; font-weight:bold;">До втрати: ${turnsLeft} ходів</span>`;
             }
             document.getElementById('manage-info').innerHTML = info;
 
