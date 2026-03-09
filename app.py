@@ -383,7 +383,8 @@ CHANCE_CELLS = [c['id'] for c in BOARD_DATA['cells'] if c.get('type') == 'chance
 TAX_CELLS = [c['id'] for c in BOARD_DATA['cells'] if c.get('type') == 'tax']
 TAX_AMOUNT = 2000
 JAIL_FINE = 500
-COLOR_GROUPS = [[1, 3], [6, 8], [11, 13], [16, 18], [21, 23], [26, 28], [31, 33], [36, 38]]
+# Групи монополій: 2 компанії → Шанс → 1 компанія (наприклад [1,2,6], [5,7,9])
+COLOR_GROUPS = [[1, 2, 6], [5, 7, 9], [11, 12, 16], [15, 17, 19], [21, 22, 26], [25, 27, 29], [31, 32, 36], [35, 38]]
 UPGRADE_COST_DEFAULT = BOARD_DATA.get('upgrade_cost_per_star', 500)
 SELL_STAR_DEFAULT = BOARD_DATA.get('sell_star_value', 500)
 

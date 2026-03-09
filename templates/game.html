@@ -194,6 +194,20 @@
         .trade-prop-item span { font-weight: 500; color: #334155; flex: 1; }
         .trade-empty { padding: 14px; text-align: center; color: #94a3b8; font-size: 0.9rem; font-style: italic; background: rgba(255,255,255,0.6); border-radius: 10px; }
         #trade-modal .modal { max-width: 640px; }
+        .trade-panel-central { display: none; padding: 12px; background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); border: 2px solid #475569; border-radius: 12px; margin-bottom: 8px; flex-shrink: 0; }
+        .trade-panel-central h3 { margin: 0 0 8px 0; font-size: 0.85rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em; }
+        .trade-panel-central .trade-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+        .trade-panel-central .trade-row label { font-size: 0.8rem; color: #cbd5e1; white-space: nowrap; }
+        .trade-panel-central .money-input { width: 80px; padding: 6px 10px; border-radius: 8px; border: 1px solid #475569; background: #334155; color: #f1f5f9; font-size: 0.9rem; }
+        .trade-panel-central .trade-tags { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; padding: 6px; background: rgba(0,0,0,0.2); border-radius: 8px; }
+        .trade-panel-central .trade-tag { background: #475569; color: #e2e8f0; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; border: 1px solid #64748b; }
+        .trade-panel-central .trade-tag:hover { background: #64748b; }
+        .trade-panel-central .trade-hint { font-size: 0.75rem; color: #64748b; margin-top: 4px; }
+        .trade-panel-central .trade-buttons { display: flex; gap: 8px; margin-top: 10px; }
+        .incoming-trade-panel { display: none; padding: 12px; background: linear-gradient(180deg, #1e3a5f 0%, #0f172a 100%); border: 2px solid #3b82f6; border-radius: 12px; margin-bottom: 8px; flex-shrink: 0; }
+        .incoming-trade-panel h3 { margin: 0 0 6px 0; font-size: 0.8rem; color: #93c5fd; }
+        .incoming-trade-panel .trade-timer { margin-bottom: 10px; font-size: 0.85rem; }
+        .incoming-trade-panel .trade-buttons { display: flex; gap: 8px; margin-top: 10px; }
         .trade-arrow { display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 1.5rem; flex-shrink: 0; }
         .incoming-trade-block { padding: 16px; border-radius: 12px; margin-bottom: 12px; }
         .incoming-trade-block.offer { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border: 2px solid #a7f3d0; }
@@ -258,6 +272,39 @@
                     <button id="btn-pay-debt" class="btn btn-pay-debt" style="display:none;" onclick="payDebt()">Сплатити борг</button>
                     <button id="btn-pay-jail" class="btn btn-pay-jail" style="display:none;" onclick="payJailFine()">Заплатити 500 і вийти з тюрми</button>
                     <button id="btn-exit" class="btn btn-exit" style="display:none;" onclick="window.location.href='/'">🔙 Повернутися в лоббі</button>
+                </div>
+            </div>
+
+            <div id="trade-panel" class="trade-panel-central">
+                <h2 id="trade-panel-title" style="margin:0 0 10px 0; font-size:1rem; color:#e2e8f0;">Обмін з гравцем</h2>
+                <div class="trade-row">
+                    <label>Я віддаю балів:</label>
+                    <input type="number" id="trade-panel-offer-money" class="money-input" value="0" min="0">
+                </div>
+                <h3>Мої компанії в обмін (клацніть на поле)</h3>
+                <div id="trade-panel-offer-props" class="trade-tags"></div>
+                <p class="trade-hint">Натисніть на свої компанії на полі гри, щоб додати їх до обміну</p>
+                <div class="trade-row" style="margin-top:12px;">
+                    <label>Хочу отримати балів:</label>
+                    <input type="number" id="trade-panel-request-money" class="money-input" value="0" min="0">
+                </div>
+                <h3>Компанії гравця в обмін (клацніть на поле)</h3>
+                <div id="trade-panel-request-props" class="trade-tags"></div>
+                <p class="trade-hint">Натисніть на компанії суперника на полі гри</p>
+                <div class="trade-buttons">
+                    <button class="btn btn-buy" onclick="sendTradeOfferFromPanel()">Запропонувати обмін</button>
+                    <button class="btn btn-skip" onclick="closeTradePanel()">Скасувати</button>
+                </div>
+            </div>
+
+            <div id="incoming-trade-panel" class="incoming-trade-panel">
+                <h2 id="incoming-trade-panel-title" style="margin:0 0 8px 0; font-size:1rem; color:#e2e8f0;">Пропозиція обміну</h2>
+                <p id="incoming-trade-panel-timer" class="trade-timer">Час: <strong>30</strong> сек</p>
+                <div id="incoming-trade-panel-offer" class="incoming-trade-block offer" style="padding:10px; margin-bottom:8px; border-radius:8px;"></div>
+                <div id="incoming-trade-panel-request" class="incoming-trade-block request" style="padding:10px; margin-bottom:8px; border-radius:8px;"></div>
+                <div class="trade-buttons">
+                    <button class="btn btn-buy" onclick="respondToTradeFromPanel(true)">Прийняти</button>
+                    <button class="btn btn-skip" onclick="respondToTradeFromPanel(false)">Відхилити</button>
                 </div>
             </div>
 
@@ -395,19 +442,20 @@
 
         const taxCellsList = boardCells.filter(function(c) { return c.type === 'tax'; }).map(function(c) { return c.id; });
         const groupColors = {
-            1:'#8e44ad', 3:'#8e44ad', 4:'#64748b', 6:'#3498db', 8:'#3498db', 
-            11:'#e84393', 13:'#e84393', 14:'#64748b', 16:'#e67e22', 18:'#e67e22', 
-            21:'#c0392b', 23:'#c0392b', 24:'#64748b', 26:'#f1c40f', 28:'#f1c40f', 
-            31:'#27ae60', 33:'#27ae60', 34:'#64748b', 36:'#2980b9', 38:'#2980b9'  
+            1:'#8e44ad', 2:'#8e44ad', 4:'#64748b', 5:'#3498db', 6:'#8e44ad', 7:'#3498db', 9:'#3498db',
+            11:'#e84393', 12:'#e84393', 14:'#64748b', 15:'#e67e22', 16:'#e84393', 17:'#e67e22', 19:'#e67e22',
+            21:'#c0392b', 22:'#c0392b', 24:'#64748b', 25:'#f1c40f', 26:'#c0392b', 27:'#f1c40f', 29:'#f1c40f',
+            31:'#27ae60', 32:'#27ae60', 34:'#64748b', 35:'#2980b9', 36:'#27ae60', 38:'#2980b9'
         };
         const colorGroupsList = [
-            [1, 3], [6, 8], [11, 13], [16, 18],
-            [21, 23], [26, 28], [31, 33], [36, 38]
+            [1, 2, 6], [5, 7, 9], [11, 12, 16], [15, 17, 19],
+            [21, 22, 26], [25, 27, 29], [31, 32, 36], [35, 38]
         ];
         const propertyIcons = {
-            1: "🏪", 3: "🍞", 4: "🚗", 6: "🚗", 8: "⚙️", 11: "💇", 13: "💈", 14: "🚗",
-            16: "🍕", 18: "🍽️", 21: "🎬", 23: "🌊", 24: "🚗", 26: "💊", 28: "🦷",
-            31: "📡", 33: "🤖", 34: "🚗", 36: "🏬", 38: "🏦"
+            1: "🏪", 2: "☕", 4: "🚗", 5: "🍞", 6: "🚗", 7: "🔧", 9: "⚙️",
+            11: "💇", 12: "💄", 14: "🚗", 15: "💈", 16: "🍕", 17: "🍣", 19: "🍽️",
+            21: "🎬", 22: "🎳", 24: "🚗", 25: "🌊", 26: "💊", 27: "🏥", 29: "🦷",
+            31: "📡", 32: "💻", 34: "🚗", 35: "🤖", 36: "🏬", 38: "🏦"
         };
 
         const board = document.getElementById('board');
@@ -798,9 +846,47 @@
             }, 1000);
         });
 
+        // ТОРГІВЛЯ: масиви обраних компаній при відкритій панелі обміну
+        let tradeOfferProps = [];
+        let tradeRequestProps = [];
+
+        function isTradePanelOpen() {
+            const el = document.getElementById('trade-panel');
+            return el && el.style.display !== 'none' && el.offsetParent !== null;
+        }
+
+        function renderTradePanelProps() {
+            const offerEl = document.getElementById('trade-panel-offer-props');
+            const requestEl = document.getElementById('trade-panel-request-props');
+            if (!offerEl || !requestEl) return;
+            offerEl.innerHTML = tradeOfferProps.map(function(cellId) {
+                return '<span class="trade-tag" data-pos="' + cellId + '" onclick="removeTradeOfferProp(' + cellId + ')">' + (companyNames[cellId] || 'Кл.' + cellId) + ' ×</span>';
+            }).join('');
+            requestEl.innerHTML = tradeRequestProps.map(function(cellId) {
+                return '<span class="trade-tag" data-pos="' + cellId + '" onclick="removeTradeRequestProp(' + cellId + ')">' + (companyNames[cellId] || 'Кл.' + cellId) + ' ×</span>';
+            }).join('');
+        }
+        function removeTradeOfferProp(cellId) { tradeOfferProps = tradeOfferProps.filter(function(p) { return p !== cellId; }); renderTradePanelProps(); }
+        function removeTradeRequestProp(cellId) { tradeRequestProps = tradeRequestProps.filter(function(p) { return p !== cellId; }); renderTradePanelProps(); }
+
         // УПРАВЛІННЯ ВЛАСНІСТЮ
         function onCellClick(pos) {
             if (!globalGameState) return;
+            if (isTradePanelOpen() && currentTradeTarget) {
+                const owner = globalGameState.properties[pos];
+                if (owner === myUsername) {
+                    const idx = tradeOfferProps.indexOf(pos);
+                    if (idx === -1) tradeOfferProps.push(pos);
+                    else tradeOfferProps.splice(idx, 1);
+                    renderTradePanelProps();
+                } else if (owner === currentTradeTarget) {
+                    const idx = tradeRequestProps.indexOf(pos);
+                    if (idx === -1) tradeRequestProps.push(pos);
+                    else tradeRequestProps.splice(idx, 1);
+                    renderTradePanelProps();
+                }
+                return;
+            }
             const currentTurnPlayer = globalGameState.players_order[globalGameState.turn_index];
             if (myUsername !== currentTurnPlayer || globalGameState.players_data[myUsername].bankrupt) return;
             if (globalGameState.properties[pos] !== myUsername) return;
@@ -859,6 +945,8 @@
             // Ховаємо модалку банкрутства, якщо вона була відкрита, і показуємо загальну
             document.getElementById('trade-modal').style.display = 'none';
             document.getElementById('manage-modal').style.display = 'none';
+            document.getElementById('trade-panel').style.display = 'none';
+            document.getElementById('incoming-trade-panel').style.display = 'none';
             goModal.style.display = 'flex';
             
             let sec = 5;
@@ -866,49 +954,44 @@
             setTimeout(() => { window.location.href = '/'; }, 5000);
         });
 
-        // ТОРГІВЛЯ ТА ЧАТ
-        function openTradeModal(targetName) { /* ... */ 
+        // ТОРГІВЛЯ ТА ЧАТ — панель обміну в центральній зоні, компанії вибираються кліком по полю
+        function openTradeModal(targetName) {
             if (!globalGameState) return;
             currentTradeTarget = targetName;
-            document.getElementById('trade-modal-title').innerText = `Торгівля з гравцем ${targetName}`;
+            tradeOfferProps = [];
+            tradeRequestProps = [];
+            document.getElementById('trade-panel-title').innerText = 'Обмін з гравцем ' + targetName;
             const myBalance = globalGameState.players_data[myUsername].balance;
             const targetBalance = globalGameState.players_data[targetName].balance;
-            document.getElementById('my-max-money').innerText = myBalance;
-            document.getElementById('target-max-money').innerText = targetBalance;
-            document.getElementById('trade-offer-money').max = myBalance;
-            document.getElementById('trade-request-money').max = targetBalance;
-            document.getElementById('trade-offer-money').value = 0;
-            document.getElementById('trade-request-money').value = 0;
-            const myPropsDiv = document.getElementById('my-props-list');
-            const targetPropsDiv = document.getElementById('target-props-list');
-            myPropsDiv.innerHTML = ''; targetPropsDiv.innerHTML = '';
-            let hasMyProps = false, hasTargetProps = false;
-            for (let i = 0; i < 40; i++) {
-                if (globalGameState.properties[i] === myUsername) {
-                    hasMyProps = true;
-                    myPropsDiv.innerHTML += `<label class="trade-prop-item"><input type="checkbox" value="${i}" class="offer-prop-check"><span>${companyNames[i]}</span></label>`;
-                }
-                if (globalGameState.properties[i] === targetName) {
-                    hasTargetProps = true;
-                    targetPropsDiv.innerHTML += `<label class="trade-prop-item"><input type="checkbox" value="${i}" class="request-prop-check"><span>${companyNames[i]}</span></label>`;
-                }
-            }
-            if (!hasMyProps) myPropsDiv.innerHTML = '<div class="trade-empty">Немає компаній для обміну</div>';
-            if (!hasTargetProps) targetPropsDiv.innerHTML = '<div class="trade-empty">У гравця немає компаній</div>';
-            document.getElementById('trade-modal').style.display = 'flex';
+            const offerInput = document.getElementById('trade-panel-offer-money');
+            const requestInput = document.getElementById('trade-panel-request-money');
+            offerInput.max = myBalance;
+            requestInput.max = targetBalance;
+            offerInput.value = 0;
+            requestInput.value = 0;
+            renderTradePanelProps();
+            document.getElementById('trade-panel').style.display = 'block';
+            document.getElementById('incoming-trade-panel').style.display = 'none';
         }
 
-        function closeTradeModal() { document.getElementById('trade-modal').style.display = 'none'; }
-        
-        function sendTradeOffer() {
+        function closeTradePanel() {
+            document.getElementById('trade-panel').style.display = 'none';
+            currentTradeTarget = null;
+            tradeOfferProps = [];
+            tradeRequestProps = [];
+        }
+
+        function sendTradeOfferFromPanel() {
+            const offerMoney = parseInt(document.getElementById('trade-panel-offer-money').value, 10) || 0;
+            const requestMoney = parseInt(document.getElementById('trade-panel-request-money').value, 10) || 0;
             socket.emit('propose_trade', {
                 room_name: currentRoom, target: currentTradeTarget,
-                offer_money: document.getElementById('trade-offer-money').value,
-                request_money: document.getElementById('trade-request-money').value,
-                offer_props: Array.from(document.querySelectorAll('.offer-prop-check:checked')).map(cb => cb.value),
-                request_props: Array.from(document.querySelectorAll('.request-prop-check:checked')).map(cb => cb.value)
+                offer_money: offerMoney,
+                request_money: requestMoney,
+                offer_props: tradeOfferProps.map(String),
+                request_props: tradeRequestProps.map(String)
             });
-            closeTradeModal();
+            closeTradePanel();
         }
 
         let tradeResponseTimerId = null;
@@ -918,23 +1001,22 @@
             if (data.target === myUsername) {
                 if (tradeResponseTimerId) clearInterval(tradeResponseTimerId);
                 currentTradeSender = data.sender;
-                document.getElementById('incoming-trade-title').innerText = `Пропозиція від ${data.sender}`;
-                const offerContent = document.getElementById('incoming-offer-content');
-                const requestContent = document.getElementById('incoming-request-content');
+                document.getElementById('trade-panel').style.display = 'none';
+                document.getElementById('incoming-trade-panel-title').innerText = 'Пропозиція від ' + data.sender;
                 const offerMoney = parseInt(data.offer_money, 10) || 0;
                 const requestMoney = parseInt(data.request_money, 10) || 0;
                 const offerPropsHtml = (data.offer_props && data.offer_props.length > 0)
-                    ? '<div class="incoming-trade-props">' + data.offer_props.map(i => `<span class="prop-tag">${companyNames[i] || 'Клітинка ' + i}</span>`).join('') + '</div>'
+                    ? '<div class="incoming-trade-props">' + data.offer_props.map(function(i) { return '<span class="prop-tag">' + (companyNames[i] || 'Клітинка ' + i) + '</span>'; }).join('') + '</div>'
                     : '<div class="incoming-trade-props"><span class="no-props">Немає</span></div>';
                 const requestPropsHtml = (data.request_props && data.request_props.length > 0)
-                    ? '<div class="incoming-trade-props">' + data.request_props.map(i => `<span class="prop-tag">${companyNames[i] || 'Клітинка ' + i}</span>`).join('') + '</div>'
+                    ? '<div class="incoming-trade-props">' + data.request_props.map(function(i) { return '<span class="prop-tag">' + (companyNames[i] || 'Клітинка ' + i) + '</span>'; }).join('') + '</div>'
                     : '<div class="incoming-trade-props"><span class="no-props">Немає</span></div>';
-                offerContent.innerHTML = '<div class="incoming-trade-money">💰 ' + offerMoney + ' балів</div>' + offerPropsHtml;
-                requestContent.innerHTML = '<div class="incoming-trade-money">💰 ' + requestMoney + ' балів</div>' + requestPropsHtml;
-                document.getElementById('incoming-trade-modal').dataset.offer = JSON.stringify(data);
-                document.getElementById('incoming-trade-modal').style.display = 'flex';
+                document.getElementById('incoming-trade-panel-offer').innerHTML = '<h3>Віддає вам</h3><div class="incoming-trade-money">💰 ' + offerMoney + ' балів</div>' + offerPropsHtml;
+                document.getElementById('incoming-trade-panel-request').innerHTML = '<h3>Просить у вас</h3><div class="incoming-trade-money">💰 ' + requestMoney + ' балів</div>' + requestPropsHtml;
+                document.getElementById('incoming-trade-panel').dataset.offer = JSON.stringify(data);
+                document.getElementById('incoming-trade-panel').style.display = 'block';
                 tradeResponseSecondsLeft = 30;
-                const timerEl = document.getElementById('incoming-trade-timer');
+                const timerEl = document.getElementById('incoming-trade-panel-timer');
                 timerEl.querySelector('strong').textContent = '30';
                 timerEl.classList.remove('warning');
                 tradeResponseTimerId = setInterval(function() {
@@ -944,7 +1026,7 @@
                     if (tradeResponseSecondsLeft <= 0) {
                         clearInterval(tradeResponseTimerId);
                         tradeResponseTimerId = null;
-                        respondToTrade(false);
+                        respondToTradeFromPanel(false);
                     }
                 }, 1000);
             }
@@ -958,6 +1040,19 @@
                 room_name: currentRoom, target: myUsername, sender: currentTradeSender, accepted: accepted,
                 offer_money: tradeData.offer_money, request_money: tradeData.request_money,
                 offer_props: tradeData.offer_props, request_props: tradeData.request_props
+            });
+        }
+
+        function respondToTradeFromPanel(accepted) {
+            if (tradeResponseTimerId) { clearInterval(tradeResponseTimerId); tradeResponseTimerId = null; }
+            document.getElementById('incoming-trade-panel').style.display = 'none';
+            const offerData = document.getElementById('incoming-trade-panel').dataset.offer;
+            if (!offerData) return;
+            const tradeData = JSON.parse(offerData);
+            socket.emit('trade_response', {
+                room_name: currentRoom, target: myUsername, sender: currentTradeSender, accepted: accepted,
+                offer_money: tradeData.offer_money, request_money: tradeData.request_money,
+                offer_props: tradeData.offer_props || [], request_props: tradeData.request_props || []
             });
         }
 
