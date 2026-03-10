@@ -363,11 +363,19 @@ def _get_cell(pos, key, default=None):
 
 PURCHASABLE_CELLS = [c['id'] for c in BOARD_DATA['cells'] if c.get('price') is not None]
 CAR_CELLS = [c['id'] for c in BOARD_DATA['cells'] if c.get('type') == 'car']
+TRANSPORT_CELLS = [c['id'] for c in BOARD_DATA['cells'] if c.get('type') == 'transport']
 RENT_BY_STARS = {
     c['id']: [c['rent_0'], c['rent_1'], c['rent_2'], c['rent_3']]
     for c in BOARD_DATA['cells']
     if c.get('type') == 'company' and all(c.get('rent_' + str(i)) is not None for i in range(4))
 }
+
+def transport_rent(n_transports, dice_total):
+    """Оренда для транспортних клітинок: 1 = 100×кубик, 2 = 200×кубик."""
+    if n_transports < 1:
+        return 0
+    multiplier = 200 if n_transports >= 2 else 100
+    return multiplier * dice_total
 
 def car_rent(n_cars):
     """Оренда за автомобілі: беруться з board_cells (rent_0..rent_3 = 1..4 авто)."""
@@ -384,7 +392,7 @@ TAX_CELLS = [c['id'] for c in BOARD_DATA['cells'] if c.get('type') == 'tax']
 TAX_AMOUNT = 2000
 JAIL_FINE = 500
 # Групи монополій. Машини по середині сторін (6, 16, 26, 36).
-COLOR_GROUPS = [[1, 2, 4], [5, 8, 9], [11, 12, 14], [15, 18, 19], [21, 22, 24], [25, 28, 29], [31, 32, 35], [34, 38]]
+COLOR_GROUPS = [[1, 3], [6, 8, 9], [11, 12, 14], [16, 18, 19], [21, 22, 24], [26, 28, 29], [31, 32, 34], [36, 38]]
 UPGRADE_COST_DEFAULT = BOARD_DATA.get('upgrade_cost_per_star', 500)
 SELL_STAR_DEFAULT = BOARD_DATA.get('sell_star_value', 500)
 
@@ -668,13 +676,16 @@ def handle_roll_dice(data):
         emit('receive_chat_message', {'sender': 'СИСТЕМА', 'message': f'{player} потрапляє до тюрми!'}, to=room_name)
         pass_turn(state, room)
     else:
-        if pos in PURCHASABLE_CELLS or pos in CAR_CELLS:
+        if pos in PURCHASABLE_CELLS or pos in CAR_CELLS or pos in TRANSPORT_CELLS:
             if pos in state['properties']:
                 owner = state['properties'][pos]
                 if owner != player and str(pos) not in state.get('mortgages', {}):
                     if pos in CAR_CELLS:
                         n_cars = sum(1 for p in CAR_CELLS if state['properties'].get(p) == owner)
                         rent = car_rent(n_cars)
+                    elif pos in TRANSPORT_CELLS:
+                        n_transports = sum(1 for p in TRANSPORT_CELLS if state['properties'].get(p) == owner)
+                        rent = transport_rent(n_transports, total)
                     else:
                         upgrades = state['upgrades'].get(str(pos), 0)
                         rent = RENT_BY_STARS[pos][min(upgrades, 3)]
